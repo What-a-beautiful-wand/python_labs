@@ -1,5 +1,5 @@
 a = float(input().replace(',','.'))
 b = float(input().replace(',','.'))
-s = round(a + b, 2)
-avg = round((a + b) / 2, 2)
-print(s, avg)
+s = a + b
+avg = (a + b) / 2
+print(f'sum={s:.2f}, avg={avg:.2f}')
