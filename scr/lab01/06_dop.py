@@ -7,4 +7,4 @@ for _ in range(2, n + 2):
         och += 1
     else:
         zaoch += 1
-print(och, zaoch)
+print('out: ', och, zaoch)
