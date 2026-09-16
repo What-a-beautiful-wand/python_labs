@@ -1,4 +1,4 @@
-hash_string = input() + 'xx'
+hash_string = input() + 'x'
 first_index = 0
 second_index = 0
 current_index = 0
