@@ -18,8 +18,10 @@ def unique_sorted(nums: list[float | int]) -> list[float | int]:
 def flatten(mat: list[list | tuple]) -> list:
     line = []
     for lst in mat:
-        if lst.__class__() != list:
-            raise TypeError('Только списки допустимы')
-        line += lst
+        if lst.__class__ == list or lst.__class__ == tuple:
+            line += lst
+            
+        else:
+            raise TypeError('Такой тип недопустим')
 
     return line
