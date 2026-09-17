@@ -23,4 +23,3 @@ def flatten(mat: list[list | tuple]) -> list:
         line += lst
 
     return line
-print(flatten([[1, 2], "ab"]))

@@ -37,15 +37,5 @@ def row_sums(mat: list[list[float | int]]) -> list[float]:
     return sums
 
 def col_sums(mat: list[list[float | int]]) -> list[float]:
-    if not mat:
-        return mat
-    
-    m = len(mat)
-    n = len(mat[0])
-
-    for line in mat:
-        if n != len(line):
-            raise ValueError('Это не матрица')
-
     mat = transpose(mat)
     return row_sums(mat)
