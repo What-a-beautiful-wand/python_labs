@@ -4,22 +4,20 @@
 
 #### Функция 1
 
-`
-def min_max(nums: list[float | int]) -> tuple[float | int, float | int]:
-    
-    if not nums:
-        raise ValueError('Пустой список не принимается')
-    
-    max_num, min_num = nums[0], nums[0]
+    def min_max(nums: list[float | int]) -> tuple[float | int, float | int]:
+        
+        if not nums:
+            raise ValueError('Пустой список не принимается')
+        
+        max_num, min_num = nums[0], nums[0]
 
-    for number in nums:
-        if max_num < number:
-            max_num = number
-        elif min_num > number:
-            min_num = number
+        for number in nums:
+            if max_num < number:
+                max_num = number
+            elif min_num > number:
+                min_num = number
 
-    return (min_num, max_num)
-`
+        return (min_num, max_num)
 
 ![Пример_работ_кода_1](https://github.com/What-a-beautiful-wand/python_labs/blob/main/img/lab02/ex01.png)
 
@@ -27,11 +25,9 @@ def min_max(nums: list[float | int]) -> tuple[float | int, float | int]:
 
 #### Функция 2
 
-`
-def unique_sorted(nums: list[float | int]) -> list[float | int]:
-    
-    return sorted(list(set(nums)))
-`
+    def unique_sorted(nums: list[float | int]) -> list[float | int]:
+        
+        return sorted(list(set(nums)))
 
 ![Пример_работы_кода_2](https://github.com/What-a-beautiful-wand/python_labs/blob/main/img/lab02/ex02.png)
 
@@ -39,18 +35,16 @@ def unique_sorted(nums: list[float | int]) -> list[float | int]:
 
 #### Функция 3
 
-`
-def flatten(mat: list[list | tuple]) -> list:
-    line = []
-    for lst in mat:
-        if lst.__class__ == list or lst.__class__ == tuple:
-            line += lst
-            
-        else:
-            raise TypeError('Такой тип недопустим')
+    def flatten(mat: list[list | tuple]) -> list:
+        line = []
+        for lst in mat:
+            if lst.__class__ == list or lst.__class__ == tuple:
+                line += lst
+                
+            else:
+                raise TypeError('Такой тип недопустим')
 
-    return line
-`
+        return line
 
 ![Пример_работы_кода_3](https://github.com/What-a-beautiful-wand/python_labs/blob/main/img/lab02/ex03.png)
 
@@ -62,28 +56,26 @@ def flatten(mat: list[list | tuple]) -> list:
 
 #### Функция 1
 
-`
-def transpose(mat: list[list[float | int]]) -> list[list]:
-    
-    if not mat:
-        return mat
+    def transpose(mat: list[list[float | int]]) -> list[list]:
+        
+        if not mat:
+            return mat
 
-    m = len(mat)
-    n = len(mat[0])
+        m = len(mat)
+        n = len(mat[0])
 
 
-    for line in mat:
-        if n != len(line):
-            raise ValueError('Это не матрица')
+        for line in mat:
+            if n != len(line):
+                raise ValueError('Это не матрица')
 
-    new_mat = [[0] * m for _ in range(n)]
+        new_mat = [[0] * m for _ in range(n)]
 
-    for line_index in range(m):
-        for column_index in range(n):
-            new_mat[column_index][line_index] = mat[line_index][column_index]
+        for line_index in range(m):
+            for column_index in range(n):
+                new_mat[column_index][line_index] = mat[line_index][column_index]
 
-    return new_mat
-`
+        return new_mat
 
 ![4](https://github.com/What-a-beautiful-wand/python_labs/blob/main/img/lab02/ex04.png)
 
@@ -91,26 +83,24 @@ def transpose(mat: list[list[float | int]]) -> list[list]:
 
 #### Функция 2
 
-`
-def row_sums(mat: list[list[float | int]]) -> list[float]:
-    
-    if not mat:
-        return mat
-    
-    m = len(mat)
-    n = len(mat[0])
+    def row_sums(mat: list[list[float | int]]) -> list[float]:
+        
+        if not mat:
+            return mat
+        
+        m = len(mat)
+        n = len(mat[0])
 
-    for line in mat:
-        if n != len(line):
-            raise ValueError('Это не матрица')
+        for line in mat:
+            if n != len(line):
+                raise ValueError('Это не матрица')
 
-    sums = []
+        sums = []
 
-    for line in mat:
-        sums.append(sum(line))
+        for line in mat:
+            sums.append(sum(line))
 
-    return sums
-`
+        return sums
 
 ![5](https://github.com/What-a-beautiful-wand/python_labs/blob/main/img/lab02/ex05.png)
 
@@ -118,12 +108,10 @@ def row_sums(mat: list[list[float | int]]) -> list[float]:
 
 #### Функция 6
 
-`
-def col_sums(mat: list[list[float | int]]) -> list[float]:
-    
-    mat = transpose(mat)
-    return row_sums(mat)
-`
+    def col_sums(mat: list[list[float | int]]) -> list[float]:
+        
+        mat = transpose(mat)
+        return row_sums(mat)
 
 ![6](https://github.com/What-a-beautiful-wand/python_labs/blob/main/img/lab02/ex06.png)
 
@@ -133,34 +121,32 @@ def col_sums(mat: list[list[float | int]]) -> list[float]:
 
 ### Задание 3
 
-`
-def format_record(rec: tuple[str, str, float]) -> str:
+    def format_record(rec: tuple[str, str, float]) -> str:
 
-    name = rec[0]
-    group = rec[1]
-    gpa = rec[2]
+        name = rec[0]
+        group = rec[1]
+        gpa = rec[2]
 
-    if not name or not group or not gpa:
-        raise ValueError('Поля не должны быть пустыми')
+        if not name or not group or not gpa:
+            raise ValueError('Поля не должны быть пустыми')
 
-    if name.__class__ != str:
-        raise TypeError('Имя должно быть строкой')
-    if group.__class__ != str:
-        raise TypeError('Группа должна быть строкой')
-    if gpa.__class__ != float and gpa.__class__ != int:
-        raise TypeError('GPA должно быть числом')
+        if name.__class__ != str:
+            raise TypeError('Имя должно быть строкой')
+        if group.__class__ != str:
+            raise TypeError('Группа должна быть строкой')
+        if gpa.__class__ != float and gpa.__class__ != int:
+            raise TypeError('GPA должно быть числом')
 
-    name = rec[0].title().split()
+        name = rec[0].title().split()
 
-    try:
-        name = f'{name[0]} {name[1][0]}.{name[2][0]}.'
-    except IndexError:
-        name = f'{name[0]} {name[1][0]}.'
+        try:
+            name = f'{name[0]} {name[1][0]}.{name[2][0]}.'
+        except IndexError:
+            name = f'{name[0]} {name[1][0]}.'
 
-    gpa = f'{round(gpa, 2):.2f}'
+        gpa = f'{round(gpa, 2):.2f}'
 
-    return f'{name}, гр. {group}, GPA {gpa}'
-`
+        return f'{name}, гр. {group}, GPA {gpa}'
 
 ![7](https://github.com/What-a-beautiful-wand/python_labs/blob/main/img/lab02/ex07.png)
 
