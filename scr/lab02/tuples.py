@@ -1,11 +1,20 @@
 def format_record(rec: tuple[str, str, float]) -> str:
 
-    name = rec[0].title().split()
+    name = rec[0]
     group = rec[1]
     gpa = rec[2]
 
     if not name or not group or not gpa:
         raise ValueError('Поля не должны быть пустыми')
+
+    if name.__class__ != str:
+        raise TypeError('Имя должно быть строкой')
+    if group.__class__ != str:
+        raise TypeError('Группа должна быть строкой')
+    if gpa.__class__ != float and gpa.__class__ != int:
+        raise TypeError('GPA должно быть числом')
+
+    name = rec[0].title().split()
 
     try:
         name = f'{name[0]} {name[1][0]}.{name[2][0]}.'
@@ -15,5 +24,3 @@ def format_record(rec: tuple[str, str, float]) -> str:
     gpa = f'{round(gpa, 2):.2f}'
 
     return f'{name}, гр. {group}, GPA {gpa}'
-
-print(format_record(("  сидорова  анна   сергеевна ", "ABB-01", 3.999)))

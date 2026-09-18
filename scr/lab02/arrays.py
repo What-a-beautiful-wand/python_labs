@@ -12,8 +12,12 @@ def min_max(nums: list[float | int]) -> tuple[float | int, float | int]:
 
     return (min_num, max_num)
 
+#============================================================================
+
 def unique_sorted(nums: list[float | int]) -> list[float | int]:
     return sorted(list(set(nums)))
+
+#============================================================================
 
 def flatten(mat: list[list | tuple]) -> list:
     line = []
