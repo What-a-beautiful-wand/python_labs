@@ -1,12 +1,12 @@
 def format_record(rec: tuple[str, str, float]) -> str:
 
-    name = rec[0]
-    group = rec[1]
-    gpa = rec[2]
-
-    if not name or not group or not gpa:
-        raise ValueError('Поля не должны быть пустыми')
-
+    try:
+        name = rec[0]
+        group = rec[1]
+        gpa = rec[2]
+    except IndexError:
+        raise ValueError('Все поля должны быть заполнены')
+    
     if name.__class__ != str:
         raise TypeError('Имя должно быть строкой')
     if group.__class__ != str:
