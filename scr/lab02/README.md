@@ -4,7 +4,8 @@
 
 #### Функция 1
 
-`def min_max(nums: list[float | int]) -> tuple[float | int, float | int]:
+`
+def min_max(nums: list[float | int]) -> tuple[float | int, float | int]:
     
     if not nums:
         raise ValueError('Пустой список не принимается')
@@ -17,7 +18,8 @@
         elif min_num > number:
             min_num = number
 
-    return (min_num, max_num)`
+    return (min_num, max_num)
+`
 
 ![Пример_работ_кода_1](https://github.com/What-a-beautiful-wand/python_labs/blob/main/img/lab02/ex01.png)
 
@@ -25,9 +27,11 @@
 
 #### Функция 2
 
-`def unique_sorted(nums: list[float | int]) -> list[float | int]:
+`
+def unique_sorted(nums: list[float | int]) -> list[float | int]:
     
-    return sorted(list(set(nums)))`
+    return sorted(list(set(nums)))
+`
 
 ![Пример_работы_кода_2](https://github.com/What-a-beautiful-wand/python_labs/blob/main/img/lab02/ex02.png)
 
@@ -35,7 +39,8 @@
 
 #### Функция 3
 
-`def flatten(mat: list[list | tuple]) -> list:
+`
+def flatten(mat: list[list | tuple]) -> list:
     line = []
     for lst in mat:
         if lst.__class__ == list or lst.__class__ == tuple:
@@ -44,7 +49,8 @@
         else:
             raise TypeError('Такой тип недопустим')
 
-    return line`
+    return line
+`
 
 ![Пример_работы_кода_3](https://github.com/What-a-beautiful-wand/python_labs/blob/main/img/lab02/ex03.png)
 
@@ -56,7 +62,8 @@
 
 #### Функция 1
 
-`def transpose(mat: list[list[float | int]]) -> list[list]:
+`
+def transpose(mat: list[list[float | int]]) -> list[list]:
     
     if not mat:
         return mat
@@ -75,7 +82,8 @@
         for column_index in range(n):
             new_mat[column_index][line_index] = mat[line_index][column_index]
 
-    return new_mat`
+    return new_mat
+`
 
 ![4](https://github.com/What-a-beautiful-wand/python_labs/blob/main/img/lab02/ex04.png)
 
@@ -83,7 +91,8 @@
 
 #### Функция 2
 
-`def row_sums(mat: list[list[float | int]]) -> list[float]:
+`
+def row_sums(mat: list[list[float | int]]) -> list[float]:
     
     if not mat:
         return mat
@@ -100,7 +109,8 @@
     for line in mat:
         sums.append(sum(line))
 
-    return sums`
+    return sums
+`
 
 ![5](https://github.com/What-a-beautiful-wand/python_labs/blob/main/img/lab02/ex05.png)
 
@@ -108,10 +118,12 @@
 
 #### Функция 6
 
-`def col_sums(mat: list[list[float | int]]) -> list[float]:
+`
+def col_sums(mat: list[list[float | int]]) -> list[float]:
     
     mat = transpose(mat)
-    return row_sums(mat)`
+    return row_sums(mat)
+`
 
 ![6](https://github.com/What-a-beautiful-wand/python_labs/blob/main/img/lab02/ex06.png)
 
@@ -121,7 +133,8 @@
 
 ### Задание 3
 
-`def format_record(rec: tuple[str, str, float]) -> str:
+`
+def format_record(rec: tuple[str, str, float]) -> str:
 
     name = rec[0]
     group = rec[1]
@@ -146,7 +159,8 @@
 
     gpa = f'{round(gpa, 2):.2f}'
 
-    return f'{name}, гр. {group}, GPA {gpa}'`
+    return f'{name}, гр. {group}, GPA {gpa}'
+`
 
 ![7](https://github.com/What-a-beautiful-wand/python_labs/blob/main/img/lab02/ex07.png)
 
