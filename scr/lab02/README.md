@@ -38,7 +38,7 @@
     def flatten(mat: list[list | tuple]) -> list:
         line = []
         for lst in mat:
-            if lst.__class__ == list or lst.__class__ == tuple:
+            if isinstance(lst, (list, tuple)):
                 line += lst
                 
             else:
@@ -106,7 +106,7 @@
 
 Принимаем на вход матрицу, если она пустая возвращаем её же. Проверяем чтобы она была не рваная. Проходимся по всем строкам, к котоорым применяем функцию sum и добавляя её в список всех сумм.
 
-#### Функция 6
+#### Функция 3
 
     def col_sums(mat: list[list[float | int]]) -> list[float]:
         
@@ -123,13 +123,13 @@
 
     def format_record(rec: tuple[str, str, float]) -> str:
 
-        name = rec[0]
-        group = rec[1]
-        gpa = rec[2]
-
-        if not name or not group or not gpa:
-            raise ValueError('Поля не должны быть пустыми')
-
+        try:
+            name = rec[0]
+            group = rec[1]
+            gpa = rec[2]
+        except IndexError:
+            raise ValueError('Все поля должны быть заполнены')
+        
         if name.__class__ != str:
             raise TypeError('Имя должно быть строкой')
         if group.__class__ != str:

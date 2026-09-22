@@ -22,7 +22,7 @@ def unique_sorted(nums: list[float | int]) -> list[float | int]:
 def flatten(mat: list[list | tuple]) -> list:
     line = []
     for lst in mat:
-        if lst.__class__ == list or lst.__class__ == tuple:
+        if isinstance(lst, (list, tuple)):
             line += lst
             
         else:
