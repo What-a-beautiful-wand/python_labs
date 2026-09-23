@@ -130,14 +130,14 @@
         except IndexError:
             raise ValueError('Все поля должны быть заполнены')
         
-        if name.__class__ != str:
+        if not isinstance(name, str):
             raise TypeError('Имя должно быть строкой')
-        if group.__class__ != str:
+        if not isinstance(group, str):
             raise TypeError('Группа должна быть строкой')
-        if gpa.__class__ != float and gpa.__class__ != int:
+        if not isinstance(gpa, (int, float)):
             raise TypeError('GPA должно быть числом')
 
-        name = rec[0].title().split()
+        name = name.title().split()
 
         try:
             name = f'{name[0]} {name[1][0]}.{name[2][0]}.'
