@@ -1,4 +1,4 @@
-from scr.lib.text import normalize, tokenize, count_freq, top_n
+from text import *
 
 def text_statistic(text: str) -> str:
     normal_text = normalize(text)
