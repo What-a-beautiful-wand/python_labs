@@ -1,7 +1,13 @@
-from text import *
 import sys
+from pathlib import Path
+
+if __package__ in (None, ''):
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+from src.lib.text import normalize, tokenize, count_freq, top_n
 
 def text_statistic(text: str, n: int = 3, table_form: bool = False) -> str:
+    """Вернуть статистику текста или таблицу частот слов."""
     normal_text = normalize(text)
     tokens = tokenize(normal_text)
     counts = count_freq(tokens)
@@ -13,15 +19,14 @@ def text_statistic(text: str, n: int = 3, table_form: bool = False) -> str:
 
     if table_form:
         table = []
-        max_len = max(len(max(tokens, key=len)), len('Слово')) + 5
-        max_num_len = max(max(counts.values()), len('Частота')) + 2
+        max_len = max([len('Слово')] + [len(word) for word in counts]) + 5
+        max_num_len = max([len('Частота')] + [len(str(count)) for count in counts.values()]) + 2
 
         table.append('+' + '-' * (max_len) + '+' + '-' * (max_num_len) + '+')
-        table.append(f'|{'Слово':<{max_len}}|{'Частота':>{max_num_len}}|')
+        table.append(f'|{"Слово":<{max_len}}|{"Частота":>{max_num_len}}|')
         table.append('+' + '-' * (max_len) + '+' + '-' * (max_num_len) + '+')
 
-        for word in counts.keys():
-            count = counts[word]
+        for word, count in top_n(counts, n=len(counts)):
             table.append(f'|{word:<{max_len}}|{count:>{max_num_len}}|')
 
         table.append('+' + '-' * (max_len) + '+' + '-' * (max_num_len) + '+')
@@ -40,7 +45,8 @@ def text_statistic(text: str, n: int = 3, table_form: bool = False) -> str:
             f"Топ слов:\n{top_text}"
         )
 
-print('Введите что-то:', end='\n')
-text = sys.stdin.read()
+if __name__ == '__main__':
+    print('Введите что-то:', end='\n')
+    text = sys.stdin.read()
 
-print(text_statistic(text, table_form=True, n=100))
+    print(text_statistic(text, table_form=True, n=100))

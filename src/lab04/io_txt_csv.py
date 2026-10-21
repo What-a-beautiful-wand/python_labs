@@ -15,16 +15,13 @@ def ensure_parent_dir(path: str | Path) -> None:
 #=======================================================================
 
 def write_csv(rows: Iterable[Sequence], path: str | Path,
-              header: tuple[str, ...] | None = None) -> None:    
+              header: tuple[str, ...] | None = None) -> None:
+    """Записать CSV в UTF-8. Разная длина строк приводит к ValueError."""
     rows = list(rows)
 
-    if not rows and header is None:
-        raise ValueError('rows не может быть пустым')
-
-    standart_len = len(rows[0]) if header is None else len(header)
-    for row in rows:
-        if len(row) != standart_len:
-            raise ValueError('Все строки должны быть одинаковой длинны')
+    check_rows = rows if header is None else [header] + rows
+    for column in zip(*check_rows, strict=True):
+        pass
 
     ensure_parent_dir(path=path)
     p = Path(path)

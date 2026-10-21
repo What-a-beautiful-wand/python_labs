@@ -1,261 +1,145 @@
-# ЛР4 — Файлы: TXT/CSV и отчёты по текстовой статистике
+# ЛАБОРАТОРНАЯ РАБОТА №4
 
-> **Цель:** закрепить работу с файлами (чтение/запись, кодировки), автоматизировать сбор статистики по словам и выгружать её в CSV.  
-> **Связь:** продолжаем ЛР3 — используем `src/lib/text.py` (`normalize`, `tokenize`, `count_freq`, `top_n`) как переиспользуемый модуль.
+## ЗАДАНИЕ 1
 
----
+### ФУНКЦИЯ 1
 
-## Результат ЛР
-- Модуль ввода/вывода `src/lab04/io_txt_csv.py` с чистыми функциями для чтения текста и записи CSV.  
-- Скрипт `src/lab04/text_report.py`, который читает текст(ы) из файлов, считает частоты и сохраняет отчёты.  
-- README с примерами запуска, плюс 1–2 тестовых файла в `data/`.  
-- **Только стандартная библиотека** (`csv`, `pathlib`, `io`, `sys`, `argparse` — опционально). Python **3.хх+**.
+    def read_text(path: str | Path, encoding: str = "utf-8") -> str:
+        p = Path(path)
+        return p.read_text(encoding=encoding)
 
----
-Структура репозитория (в формате ЛР2)
+Принимаем на вход путь к файлу и его кодировку. Преобразуем путь через Path, читаем весь файл и возвращаем его содержимое одной строкой. По умолчанию используем utf-8, для другой кодировки передаём, например, encoding="cp1251". Если файл пустой, возвращаем пустую строку. Для больших файлов лучше читать текст построчно, чтобы не хранить его целиком в памяти.
 
-Свой **отдельный репозиторий** на GitHub:
-```
-python_labs/
-├─ README.md                 # Общий отчет
-├─ src/                      # здесь — все скрипты по заданиям
-│  ├─ lib/                   # переиспользуемые модули
-│  │   └─ text.py            # из ЛР3
-│  ├─ lab01/
-|  ........
-│  ├─ lab04/                 # (эта лабораторная)
-│  │   ├─ io_txt_csv.py      # read_text / write_csv (+ ensure_parent_dir)
-│  │   └─ text_report.py     # генерация data/report.csv + ★
-│  ├─ lab05/
-|  ........
-│  └─ lab10/
-├─ data/
-│  └─ lab04/
-│      ├─ input.txt          # вход для базовой версии
-│      ├─ a.txt              # входы для ★ (несколько файлов)
-│      └─ b.txt
-└─ images/                   # сюда — скриншоты работы программ
-   ├─ lab01
-   ........           
-   ├─ lab04/                 # Папка lab04 теперь - непустая
-   |   ├─ img01.png          # пример запуска базовой версии
-   |   ........
-   |   └─ img05.png          # пример запуска со списком файлов (★)
-   ├─ lab05
-   ........
-   └─ lab10
-```
+### ФУНКЦИЯ 2
 
+    def ensure_parent_dir(path: str | Path) -> None:
+        p = Path(path)
+        p.parent.mkdir(parents=True, exist_ok=True)
 
----
-## Теория и формальные правила
+Получаем путь к файлу, берём его родительскую папку и создаём её. Через parents=True создаём все недостающие папки, а exist_ok=True позволяет не получать ошибку, если они уже существуют.
 
-### Нормализация и токенизация (берём из ЛР3)
-- `norm(s)` = `casefold` → `ё→е` → заменить `\t\r\n` на пробел → схлопнуть пробелы.  
-- `tokenize(norm(s))` = все подстроки по шаблону `\w+(?:-\w+)*` (разделители — не-`\w`).
+### ФУНКЦИЯ 3
 
-### Частоты и сортировка
-- Для токенов `T = [t₁,…,tₙ]` частота `f(w) = |{ i : tᵢ = w }|`.  
-- Топ-N: сортировка пар `(w, f(w))` по ключу **`(-f(w), w)`** → берём первые N.
+    def write_csv(rows: Iterable[Sequence], path: str | Path,
+                  header: tuple[str, ...] | None = None) -> None:
+        rows = list(rows)
 
-### Формат CSV-отчётов
-- Базовый отчёт: **`word,count`**, строки отсортированы по `count ↓`, затем `word ↑`.  
-- Вариант «несколько файлов» (★): **`file,word,count`**, отсортировано `file ↑`, затем `count ↓`, затем `word ↑`.  
-- Кодировка файлов: по умолчанию `UTF-8` (в явном виде указываем при чтении/записи).
+        check_rows = rows if header is None else [header] + rows
+        for column in zip(*check_rows, strict=True):
+            pass
 
----
-## Подсказки по коду (шаблоны)
+        ensure_parent_dir(path=path)
+        p = Path(path)
 
-### Чтение текста
-```python
-from pathlib import Path
+        with p.open("w", newline="", encoding="utf-8") as file:
+            w = csv.writer(file)
+            if header is not None:
+                w.writerow(header)
 
-def read_text(path: str | Path, encoding: str = "utf-8") -> str:
-    p = Path(path)
-    # FileNotFoundError и UnicodeDecodeError пусть «всплывают» — это нормально
-    return p.read_text(encoding=encoding)
-```
+            for r in rows:
+                w.writerow(r)
 
-### Запись CSV 
-```python
-import csv
-from pathlib import Path
-from typing import Iterable, Sequence
+Принимаем строки, путь к файлу и необязательный заголовок. Превращаем строки в список, добавляем заголовок к проверке, если он есть. Через zip со strict=True проверяем, чтобы все строки были одинаковой длины. Если длина разная, получаем ValueError ещё до открытия файла, поэтому старое содержимое не стирается.
 
-def write_csv(rows: Iterable[Sequence], path: str | Path,
-              header: tuple[str, ...] | None = None) -> None:
-    p = Path(path)
-    rows = list(rows)
-    with p.open("w", newline="", encoding="utf-8") as f:
-        w = csv.writer(f)
-        if header is not None:
-            w.writerow(header)
-        for r in rows:
-            w.writerow(r)
-```
-### Генерация отчёта
-```python
-from collections import Counter
+Создаём нужные папки, открываем файл на запись в utf-8. Сначала записываем заголовок, если он передан, затем проходимся по всем строкам и записываем их через csv.writer. Если строки пустые, получаем пустой файл, а при наличии заголовка — только заголовок.
 
-def frequencies_from_text(text: str) -> dict[str, int]:
-    from lib.text import normalize, tokenize  # из ЛР3
-    tokens = tokenize(normalize(text))
-    return Counter(tokens)  # dict-like
+## ЗАДАНИЕ 2
 
-def sorted_word_counts(freq: dict[str, int]) -> list[tuple[str, int]]:
-    return sorted(freq.items(), key=lambda kv: (-kv[1], kv[0]))
-```
----
+### ФУНКЦИЯ 1
 
-## Задание A — модуль `src/lab04/io_txt_csv.py`
+    def frequencies_from_text(text: str) -> dict[str, int]:
+        tokens = tokenize(normalize(text))
+        return count_freq(tokens)
 
-Реализуйте (с докстрингами и типами):
+Получаем текст, нормализуем его и разбиваем на слова. Используем normalize, tokenize и count_freq из третьей лабораторной, чтобы посчитать, сколько раз встретилось каждое слово.
 
-1. `read_text(path: str | Path, encoding: str = "utf-8") -> str`  
-   - Открыть файл на чтение в указанной кодировке и вернуть содержимое **как одну строку**.  
-   - Обрабатывать ошибки: если файл не найден — поднимать `FileNotFoundError` (пусть падает), если кодировка не подходит — поднимать `UnicodeDecodeError` (пусть падает).  
-   - НО: в докстринге опишите, как пользователь может выбрать другую кодировку (пример: `encoding="cp1251"`).
+### ФУНКЦИЯ 2
 
-2. `write_csv(rows: list[tuple | list], path: str | Path, header: tuple[str, ...] | None = None) -> None`  
-   - Создать/перезаписать CSV с разделителем `,`.  
-   - Если передан `header`, записать его первой строкой.  
-   - Проверить, что каждая строка в `rows` имеет одинаковую длину (иначе `ValueError`).
+    def sorted_word_counts(freq: dict[str, int]) -> list[tuple[str, int]]:
+        return sorted(freq.items(), key=lambda x: (-x[1], x[0]))
 
-★ _(опционально, но полезно)_ `ensure_parent_dir(path: str | Path) -> None`  
-   - Создать родительские директории, если их нет (для удобства перед записью).
+Принимаем словарь частот, превращаем его в список пар и сортируем по ключу (-x[1], x[0]). Сначала идут слова с большей частотой, а если частоты одинаковые, сортируем слова по алфавиту.
 
-### Мини‑тесты (ручные, для README)
-```py
-from src.io_txt_csv import read_text, write_csv
-txt = read_text("data/input.txt")  # должен вернуть строку
-write_csv([("word","count"),("test",3)], "data/check.csv")  # создаст CSV
-```
+### ОДИН ФАЙЛ
 
-### Краевые случаи
-- Пустой файл → возвращается пустая строка.  
-- Файл очень большой → допускается читать целиком (наше ТЗ), но в README отметить, что в реале стоит читать построчно.  
-- `write_csv` с пустым `rows` и `header=None` → создаётся пустой файл (0 строк). С `header=("a","b")` → файл содержит только заголовок.
+    text = '\n'.join(texts)
+    counts = frequencies_from_text(text)
+    rows = sorted_word_counts(counts)
 
----
+    write_csv(rows, path, header=('word', 'count'))
 
-## Задание B — скрипт `src/lab04/text_report.py`
+    print(f'Всего слов: {sum(counts.values())}')
+    print(f'Уникальных слов: {len(counts)}')
+    print('Топ-5:')
+    for word, count in top_n(counts, n=5):
+        print(f'{word}:{count}')
 
-Напишите скрипт, который:
-1) Читает **один** входной файл `data/input.txt` (путь можно захардкодить или принять параметром командной строки — опишите в README).  
-2) Нормализует текст (`lib/text.py`), токенизирует и считает частоты слов.  
-3) Сохраняет `data/report.csv` c колонками: **`word,count`**, отсортированными: count ↓, слово ↑ (при равенстве).  
-4) В консоль печатает краткое резюме:  
-   - `Всего слов: <N>`  
-   - `Уникальных слов: <K>`  
-   - `Топ-5:` (список из `top_n` из ЛР3)
+![Пример_работы_кода_1](../../img/lab04/ex01.png)
 
-### Пример запуска
-```bash
-python src/lab04/text_report.py                 # читает data/input.txt, пишет data/report.csv
-python src/lab04/text_report.py --in data/in.txt --out data/out.csv
-```
+Читаем входной файл, считаем частоты слов и сортируем их. Записываем результат в CSV с колонками word,count. В консоль выводим общее количество слов, количество уникальных слов и топ-5 через top_n из третьей лабораторной.
 
-### Пример `report.csv`
-```
-word,count
-привет,2
-мир,1
-```
+Все команды запускаем из корня репозитория:
 
-### Краевые случаи
-- `data/input.txt` не существует → понятная ошибка в консоли (исключение пусть всплывает или выведите `print()` и `sys.exit(1)` — опишите поведение в README).  
-- Пустой вход → `report.csv` будет содержать только заголовок или будет пустым (примите решение и опишите — рекомендую **только заголовок**).  
-- Нестандартная кодировка → укажите, как передать `--encoding cp1251` (если реализуете `argparse`).
+    python src/lab04/text_report.py
+    python src/lab04/text_report.py --in data/lab04/input.txt --out data/lab04/report.csv
 
----
+Без параметров читаем data/lab04/input.txt и записываем data/lab04/report.csv. На вход подаём «Привет, мир! Привет!!!», получаем слово «привет» с частотой 2 и слово «мир» с частотой 1. Если входной файл пустой, в отчёте остаётся только заголовок word,count, а количество слов равно нулю.
 
-## ★ Дополнительно (со звёздочкой)
+### ОБРАБОТКА ОШИБОК
 
-### Несколько входных файлов и «сводный» отчёт
-**Задача:** принять **несколько** путей (скажем, `--in data/a.txt data/b.txt ...`) и:  
-- Считать частоты **по каждому файлу отдельно** → `data/report_per_file.csv` со столбцами: `file,word,count` (строки отсортированы по `file` ↑, затем `count` ↓, затем `word` ↑).  
-- Сформировать **сводный** отчёт по всем файлам вместе → `data/report_total.csv` (как раньше `word,count`).
+    except FileNotFoundError as error:
+        print(f'Ошибка: файл не найден: {error.filename}', file=sys.stderr)
+        return 1
+    except UnicodeDecodeError:
+        print('Ошибка: не удалось прочитать текст. Проверьте --encoding (например, cp1251).',
+              file=sys.stderr)
+        return 1
+    except LookupError:
+        print(f'Ошибка: неизвестная кодировка: {args.encoding}', file=sys.stderr)
+        return 1
+    except (OSError, ValueError, csv.Error) as error:
+        print(f'Ошибка при создании отчёта: {error}', file=sys.stderr)
+        return 1
 
-**Мини‑пример:**
-```
-a.txt: "Привет мир"
-b.txt: "Привет, привет!"
+Чтение файлов и запись отчётов выполняем внутри try. Если файл не найден, кодировка не подходит или не получается записать CSV, попадаем в соответствующий except. Выводим сообщение об ошибке и возвращаем 1, после чего sys.exit завершает программу с этим кодом. При успешной работе возвращаем 0.
 
-report_per_file.csv
-file,word,count
-a.txt,привет,1
-a.txt,мир,1
-b.txt,привет,2
+Кодировку задаём через --encoding. Например, для файла, который заранее сохранили в cp1251:
 
-report_total.csv
-word,count
-привет,3
-мир,1
-```
+    python src/lab04/text_report.py --in data/lab04/input_cp1251.txt --encoding cp1251
 
-### Экспорт в «красивую» таблицу
-Параллельно с `report.csv` печатать «приятно отформатированную» таблицу в консоль (ширина столбцов по максимуму, как в ЛР3★ «табличный вывод»).
+## ЗАДАНИЯ СО ЗВЁЗДОЧКОЙ
 
----
+### НЕСКОЛЬКО ФАЙЛОВ
 
-## Тест‑кейсы (минимум)
+    texts = []
+    per_file = []
+    for path in sorted(set(args.inputs)):
+        text = read_text(path, encoding=args.encoding)
+        texts.append(text)
+        counts = frequencies_from_text(text)
 
-> Предполагаем, что `lib/text.py` из ЛР3 ведёт себя так: casefold + `ё→е`, токенизация `\w+(?:-\w+)*`, `top_n` сортирует `count ↓, word ↑`.
+        for word, count in sorted_word_counts(counts):
+            per_file.append((str(Path(path)), word, count))
 
-### A. Один файл (база)
-**Вход (`data/input.txt`):**
-```
-Привет, мир! Привет!!!
-```
-**Ожидаем `report.csv`:**
-```
-word,count
-привет,2
-мир,1
-```
-**Консоль:**
-```
-Всего слов: 3
-Уникальных слов: 2
-Топ-5:
-привет:2
-мир:1
-```
+    per_file.sort(key=lambda x: (x[0], -x[2], x[1]))
 
-### B. Пустой файл
-**Вход:** пустой `data/input.txt`  
-**Ожидание:** `report.csv` содержит только заголовок `word,count` (или пуст — если так решите в README; держитесь выбранной политики).
+![Пример_работы_кода_2](../../img/lab04/ex02.png)
 
-### C. Кодировка cp1251
-**Вход:** `data/input.txt` в `cp1251` с текстом `Привет`  
-**Действие:** `python src/lab04/text_report.py --in data/input.txt --encoding cp1251`  
-**Ожидание:** корректное чтение и отчёт `привет,1`.
+Получаем несколько путей через --in. Убираем повторяющиеся пути через set, сортируем их и проходимся по каждому файлу. Читаем текст и отдельно считаем частоты. К каждому слову добавляем путь к файлу, затем сортируем строки по пути, частоте по убыванию и слову по алфавиту.
 
-### D★. Несколько файлов (пер‑файл и сводный)
-**Вход:**  
-- `a.txt`: `Привет мир`  
-- `b.txt`: `Привет, привет!`  
-**Запуск:**  
-`python src/lab04/text_report.py --in data/a.txt data/b.txt --per-file data/report_per_file.csv --total data/report_total.csv`  
-**Ожидаем:**
-- `report_per_file.csv` — как в примере в звёздочной части.  
-- `report_total.csv` — как в примере в звёздочной части.
+Записываем отдельный отчёт с колонками file,word,count. Все прочитанные тексты соединяем через перенос строки и считаем общую статистику. Её записываем в сводный отчёт с колонками word,count.
 
----
+    python src/lab04/text_report.py --in data/lab04/a.txt data/lab04/b.txt --per-file data/lab04/report_per_file.csv --total data/lab04/report_total.csv --table
 
-## Что сдавать
-1. `src/lab04/io_txt_csv.py` и `src/lab04/text_report.py` (+ при необходимости `src/lib/text.py` из ЛР3, если его нет у проверяющего).  
-2. `README.md` с командами запуска, пояснением про кодировки и политикой для пустого входа.  (код не нужен)
-3. `data/` с 1–2 тестовыми файлами, `images/` со скриншотами запуска.
+В a.txt записано «Привет мир», в b.txt — «Привет, привет!». В сводном отчёте получаем «привет» с частотой 3 и «мир» с частотой 1. Если пути для отчётов не переданы, создаём data/lab04/report_per_file.csv и data/lab04/report_total.csv.
 
-## Критерии допуска
-- Лабораторная работа **выполнена на 100%**
-- Оформлен отчет в README-файле по примеру **effective-broccoli**
+### С ТАБЛИЦЕЙ
 
-## Критерии приемки
-- Корректность функций и формат ввода/вывода — **40%**  
-- Корректность тест-кейсов, покрытие всех случаев — **40%%**  
-- Качество кода (докстринги, аннотации типов, разумные проверки) — **20%**  
+    if args.table:
+        print(text_statistic(text, table_form=True))
 
-> Подсказка: функции из этой ЛР пригодятся в ЛР5–ЛР6. Старайтесь держать I/O и логику отдельно, чтобы их было удобно тестировать.
+Если передали --table, вызываем text_statistic из общего модуля src/lib/text_stats.py с table_form=True. Находим максимальную длину слова и количества повторений, строим рамку и выводим все слова с их частотами. Слова выравниваем влево, числа вправо. Для пустого текста выводим только рамку и заголовки.
 
+    python -m src.lab04.text_report --table
+
+В папки src, lib и лабораторных добавлены __init__.py, чтобы можно было импортировать их как модули. Ввод текста и запуск программы находятся под проверкой __name__ == '__main__', поэтому при импорте они не выполняются.
