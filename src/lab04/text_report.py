@@ -2,10 +2,6 @@ import argparse
 import csv
 import sys
 from pathlib import Path
-
-if __package__ in (None, ''):
-    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-
 from src.lib.text import normalize, tokenize, count_freq, top_n
 from src.lib.text_stats import text_statistic
 from src.lab04.io_txt_csv import read_text, write_csv
@@ -23,8 +19,7 @@ def sorted_word_counts(freq: dict[str, int]) -> list[tuple[str, int]]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description='Отчёт по частотам слов')
-    parser.add_argument('--in', dest='inputs', nargs='+',
-                        default=['data/lab04/input.txt'], help='Входные TXT-файлы')
+    parser.add_argument('--in', dest='inputs', nargs='+', default=['data/lab04/input.txt'], help='Входные TXT-файлы')
     parser.add_argument('--out', help='Путь к отчёту word,count')
     parser.add_argument('--encoding', default='utf-8', help='Кодировка входных файлов')
     parser.add_argument('--per-file', help='Путь к отчёту file,word,count')
