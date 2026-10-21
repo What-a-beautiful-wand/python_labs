@@ -11,20 +11,17 @@ from src.lib.text_stats import text_statistic
 from src.lab04.io_txt_csv import read_text, write_csv
 
 def frequencies_from_text(text: str) -> dict[str, int]:
-    """Нормализовать текст и посчитать частоты слов."""
     tokens = tokenize(normalize(text))
     return count_freq(tokens)
 
 #=======================================================================
 
 def sorted_word_counts(freq: dict[str, int]) -> list[tuple[str, int]]:
-    """Отсортировать слова по убыванию частоты, затем по алфавиту."""
     return sorted(freq.items(), key=lambda x: (-x[1], x[0]))
 
 #=======================================================================
 
 def main() -> int:
-    """Прочитать файлы, записать отчёты и вывести статистику."""
     parser = argparse.ArgumentParser(description='Отчёт по частотам слов')
     parser.add_argument('--in', dest='inputs', nargs='+',
                         default=['data/lab04/input.txt'], help='Входные TXT-файлы')
