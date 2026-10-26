@@ -7,7 +7,6 @@ if __package__ in (None, ''):
 from src.lib.text import normalize, tokenize, count_freq, top_n
 
 def text_statistic(text: str, n: int = 3, table_form: bool = False) -> str:
-    """Вернуть статистику текста или таблицу частот слов."""
     normal_text = normalize(text)
     tokens = tokenize(normal_text)
     counts = count_freq(tokens)
@@ -26,7 +25,7 @@ def text_statistic(text: str, n: int = 3, table_form: bool = False) -> str:
         table.append(f'|{"Слово":<{max_len}}|{"Частота":>{max_num_len}}|')
         table.append('+' + '-' * (max_len) + '+' + '-' * (max_num_len) + '+')
 
-        for word, count in top_n(counts, n=len(counts)):
+        for word, count in top_n(counts, n=n):
             table.append(f'|{word:<{max_len}}|{count:>{max_num_len}}|')
 
         table.append('+' + '-' * (max_len) + '+' + '-' * (max_num_len) + '+')
