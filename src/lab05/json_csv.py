@@ -4,6 +4,7 @@ from pathlib import Path
 from src.lib.io_txt_csv import write_csv
 
 def json_to_csv(json_path: str, csv_path: str) -> None:
+
     if Path(json_path).suffix.lower() != ".json":
         raise ValueError("Входной файл должен быть JSON")
     if Path(csv_path).suffix.lower() != ".csv":
@@ -17,7 +18,7 @@ def json_to_csv(json_path: str, csv_path: str) -> None:
         or not text
         or not all(isinstance(item, dict) for item in text)
     ):
-        raise ValueError("Пустой JSON")
+        raise ValueError("Пустой JSON или плохой формат")
 
     header = set()
     for item in text:

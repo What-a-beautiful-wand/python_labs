@@ -1,267 +1,218 @@
-# ЛР5 — JSON и конвертации (JSON↔CSV, CSV→XLSX): Техническое задание
+# ЛАБОРАТОРНАЯ РАБОТА №5
 
-> **Цель:** Разобраться с форматом JSON, сериализацией/десериализацией и табличными конвертациями.  
-> **Связь:** продолжение ЛР4 (работа с файлами) и подготовка базы для ЛР6 (CLI-конвертеры) и ЛР7 (тестирование).
+## ЗАДАНИЕ А 
 
----
+### ФУНКЦИЯ 1
 
-## Результат ЛР
-- Модуль `src/lab05/json_csv.py` с чистыми функциями:  
-  - `json_to_csv(json_path, csv_path)`  
-  - `csv_to_json(csv_path, json_path)`  
-  (без вывода в stdout, только работа с файлами; валидация ошибок).
+    def json_to_csv(json_path: str, csv_path: str) -> None:
 
-- Модуль `src/lab05/cvs_xlsx.py` с функцией  
-  - `csv_to_xlsx(csv_path, xlsx_path)`  
-  (через **openpyxl** или **xlsxwriter**, авто-ширина колонок).
+        if Path(json_path).suffix.lower() != ".json":
+            raise ValueError("Входной файл должен быть JSON")
+        if Path(csv_path).suffix.lower() != ".csv":
+            raise ValueError("Выходной файл должен быть CSV")
 
-- Примеры данных в `data/samples/` и артефакты конвертаций в `data/out/`:
-  - `people.json` ⇄ `people_from_json.csv`
-  - `people.csv` ⇄ `people_from_csv.json`
-  - `people.xlsx` (из любого CSV)
+        with open(json_path, mode='r', encoding='UTF-8') as file:
+            text = json.load(file)
 
-- `README.md` с командами запуска, описанием форматов, допущений и скриншотами проверки XLSX.
+        if (
+            not isinstance(text, list)
+            or not text
+            or not all(isinstance(item, dict) for item in text)
+        ):
+            raise ValueError("Пустой JSON или плохой формат")
 
-- `requirements.txt` с одной зависимостью (**openpyxl** или **xlsxwriter**).  
-  Всё остальное — стандартная библиотека (`json`, `csv`, `pathlib`).  
-  Python **3.хх+**.
+        header = set()
+        for item in text:
+            for key in item:
+                header.add(key)
 
----
-## Структура репозитория
+        header = sorted(header)
+        if not header:
+            raise ValueError("JSON не содержит полей для CSV")
+        if any(not key.strip() for key in header):
+            raise ValueError("Названия полей JSON не должны быть пустыми")
 
-```
-python_labs/
-├─ README.md                        #Общий отчет
-├─ requirements.txt                # openpyxl или xlsxwriter, по выбору
-├─ src/                             # здесь — все скрипты по заданиям
-|  ├─ lib/                          # Переиспользуемые модули - хранить здесь
-|  |  └── io_helpers.py             # Например чтение файлов из ЛР4
-|  ├─ lab01
-|  ........
-|  ├─ lab04  
-|  ├─ lab05/
-|  |    ├── json_csv.py             # JSON↔CSV
-│  |    ├── csv_xlsx.py             # CSV→XLSX
-│  |    └── __init__.py
-|  ........
-|  └─ lab10
-├─ data/
-|   ├── samples/
-│   │   ├── people.json             # пример входного JSON (список словарей)
-│   │   ├── people.csv              # пример входного CSV
-│   │   └── cities.csv              # дополнительный CSV для демонстрации
-│   └── out/
-│       ├── people_from_json.csv    # результат JSON→CSV
-│       ├── people_from_csv.json    # результат CSV→JSON
-│       └── people.xlsx             # результат CSV→XLSX
+        rows = []
+        for item in text:
+            row = []
+            for key in header:
+                row.append(item.get(key, ""))
+            rows.append(row)
 
-└─ images/                          # сюда — скриншоты работы программ
-   ├─ lab01
-   ........
-   └─ lab10
-```
----
+        write_csv(rows, csv_path, header=tuple(header))
 
-## Теоретическая часть
+Принимаем путь к JSON и путь к выходному CSV. Через Path(...).suffix.lower() проверяем расширения файлов. Открываем JSON для чтения и вызываем json.load(file), чтобы получить Python-объект из содержимого файла.
 
-### Что такое JSON
-**JSON (JavaScript Object Notation)** — текстовый формат для обмена структурированными данными.  
-Хранит объекты и списки, используется для сериализации и API.  
+Проверяем, что получили непустой список, каждый элемент которого является словарём. Для проверки используем isinstance и all. Если структура не подходит, вызываем ValueError.
 
-**Пример:**
-```json
-[
-  {"name": "Alice", "age": 22},
-  {"name": "Bob", "age": 25}
-]
-```
+Создаём множество header и собираем в него ключи из всех словарей. Множество убирает повторения, а sorted располагает названия по алфавиту. В этой реализации порядок колонок всегда алфавитный, даже если ключи в исходном JSON записаны иначе. Пустые названия полей и список без полей отклоняем.
 
-Python-модуль `json`:
-- `json.load(f)` — загрузить из файла;
-- `json.dump(obj, f, ensure_ascii=False, indent=2)` — записать в файл;
-- `json.loads(s)` / `json.dumps(obj)` — работа со строками.
+Затем отдельно собираем строки. Для каждого словаря проходимся по общему заголовку и через item.get(key, "") получаем значение. Если ключа нет, подставляем пустую строку. Так все строки получаются одинаковой длины, а значения попадают в нужные колонки, даже если дополнительные ключи встретились только в последнем объекте.
 
----
+Передаём строки, выходной путь и заголовок в write_csv. Эта функция создаёт недостающие папки и записывает CSV с заголовком, разделителем-запятой и кодировкой UTF-8.
 
-### Что такое CSV
-**CSV (Comma-Separated Values)** — табличный текстовый формат, где значения разделены запятыми или `;`.
+==================================================================================
 
-**Пример:**
-```csv
-name,age,city
-Alice,22,SPB
-Bob,25,Moscow
-```
+В файле [data/samples/a.json](../../data/samples/a.json) находятся два объекта:
 
-Python-модуль `csv`:
-- `csv.DictReader(f)` — читает CSV как список словарей;
-- `csv.DictWriter(f, fieldnames=...)` — записывает список словарей;
-- `csv.Sniffer()` — автоопределение разделителя.
+    [
+        {"a": 1, "b": 2, "c": "a"},
+        {"a": 2, "b": 3, "c": "b"}
+    ]
 
----
+Запускаем:
 
-### JSON ↔ CSV ↔ XLSX
-- JSON хранит **объекты** и **списки**.  
-- CSV — **таблицы** (строки и колонки).  
-- XLSX — **формат Excel**.  
+    python -c "from src.lab05.json_csv import json_to_csv; json_to_csv('data/samples/a.json', 'data/out/a_from_json.csv')"
 
-Конвертация:
-- JSON → CSV: объединение ключей → столбцы.  
-- CSV → JSON: каждая строка → словарь.  
-- CSV → XLSX: перенос строк в лист Excel, установка ширины колонок.
+В data/out/a_from_json.csv получаем:
 
----
-## ЗАДАНИЕ
+    a,b,c
+    1,2,a
+    2,3,b
 
-### Задание A — JSON ↔ CSV
-Реализовать модуль `src/lab05/json_csv.py` с функциями:
-```python
-def json_to_csv(json_path: str, csv_path: str) -> None:
-    """
-    Преобразует JSON-файл в CSV.
-    Поддерживает список словарей [{...}, {...}], заполняет отсутствующие поля пустыми строками.
-    Кодировка UTF-8. Порядок колонок — как в первом объекте или алфавитный (указать в README).
-    """
-def csv_to_json(csv_path: str, json_path: str) -> None:
-    """
-    Преобразует CSV в JSON (список словарей).
-    Заголовок обязателен, значения сохраняются как строки.
-    json.dump(..., ensure_ascii=False, indent=2)
-    """
-```
+Количество записей сохраняется: два объекта JSON превращаются в две строки данных CSV. Заголовок записывается отдельно и в количество записей не входит.
 
-#### **Требования**:
- - Проверка ошибок: 
-    - неверный тип файла, пустой JSON или CSV → `ValueError`.
-    - осутствующий файл → `FileNotFoundError`
- - Не использовать внешние пакеты (только json, csv, pathlib).
- - Все пути относительные.
- - Кодировка — строго UTF-8.
+Если у второго объекта появляется дополнительный ключ, например:
 
-### Задание B — CSV → XLSX
-Реализовать модуль `src/lab05/csv_xlsx.py`:
-```python
-def csv_to_xlsx(csv_path: str, xlsx_path: str) -> None:
-    """
-    Конвертирует CSV в XLSX.
-    Использовать openpyxl ИЛИ xlsxwriter.
-    Первая строка CSV — заголовок.
-    Лист называется "Sheet1".
-    Колонки — автоширина по длине текста (не менее 8 символов).
-    """
-```
-#### **Требования**:
- - Проверка ошибок: 
-    - неверный тип файла, пустой JSON или CSV → `ValueError`.
-    - осутствующий файл → `FileNotFoundError`
- - Не использовать внешние пакеты.
- - Все пути относительные.
- - Кодировка — строго UTF-8.
- - Результат — открываемый XLSX с корректной структурой таблицы.
----
+    [
+        {"name": "igor", "age": 25},
+        {"name": "anton", "age": 15, "city": "Moscow"}
+    ]
 
-## Примеры кода
+Результат будет таким:
 
-### Пример 1. JSON чтение и запись
-```python
-import json
-from pathlib import Path
+    age,city,name
+    25,,igor
+    15,Moscow,anton
 
-data = [{"name": "Alice", "age": 22}, {"name": "Bob", "age": 25}]
-path = Path("data/out/people.json")
+Для первого человека поля city нет, поэтому между запятыми остаётся пустое значение. Ключи age, city, name расположены по алфавиту.
 
-with path.open("w", encoding="utf-8") as f:
-    """ json.dump """
+### ФУНКЦИЯ 2
 
-with path.open(encoding="utf-8") as f:
-    """ json.load """
-```
+    def csv_to_json(csv_path: str, json_path: str) -> None:
+        if Path(csv_path).suffix.lower() != ".csv":
+            raise ValueError("Входной файл должен быть CSV")
+        if Path(json_path).suffix.lower() != ".json":
+            raise ValueError("Выходной файл должен быть JSON")
 
-### Пример 2. Работа с CSV
-```python
-import csv
+        with open(csv_path, "r", encoding="utf-8", newline="") as file:
+            reader = csv.reader(file)
+            keys = next(reader, None)
 
-rows = [
-    {"name": "Alice", "age": "22", "city": "SPB"},
-    {"name": "Bob", "age": "25", "city": "Moscow"}
-]
+            if not keys or any(not key.strip() for key in keys):
+                raise ValueError("CSV пустой или отсутствует заголовок")
+            if len(set(keys)) != len(keys):
+                raise ValueError("Названия колонок CSV не должны повторяться")
 
-with open("data/out/people.csv", "w", newline="", encoding="utf-8") as f:
-    """
-        csv.DictWriter
-    """
+            text = []
+            for row in reader:
+                text.append(dict(zip(keys, row, strict=True)))
 
-with open("data/out/people.csv", encoding="utf-8") as f:
-    """
-        csv.DictReader(f)
-    """
-```
+        Path(json_path).parent.mkdir(parents=True, exist_ok=True)
+        with open(json_path, "w", encoding="utf-8") as file:
+            json.dump(text, file, ensure_ascii=False, indent=2)
 
-### Пример 3. CSV → XLSX через openpyxl
-```python
-from openpyxl import Workbook
-import csv
+Проверяем расширения входного и выходного файлов. Открываем CSV с newline="", чтобы обработкой переводов строк занимался модуль csv. Через csv.reader получаем записи в виде списков строк. Значения с запятыми, кавычками и переносами строк внутри корректно оформленного CSV также читаются этим модулем.
 
-wb = Workbook()
-ws = wb.active
-ws.title = "Sheet1"
+Вызов next(reader, None) забирает первую запись, которую принимаем за заголовок. Если файл пустой, получаем None. Проверяем, что заголовок есть, его названия не пустые и не повторяются. Первая запись считается заголовком по соглашению: определить по произвольному тексту, является ли она заголовком или данными, функция не может.
 
-with open("data/samples/people.csv", encoding="utf-8") as f:
-    """
-        ws.append for row in csv.reader(f)
-        
-        wb.save("data/out/people.xlsx")
-    """
-```
+Для каждой следующей записи zip(keys, row, strict=True) соединяет название колонки с соответствующим значением. Например, списки ["name", "age"] и ["igor", "25"] превращаются в пары ("name", "igor") и ("age", "25"). Через dict создаём из них словарь и добавляем его в список text. Параметр strict=True вызывает ValueError, если число значений не совпадает с числом колонок.
 
-### Пример 4. JSON → CSV
-```python
-import json, csv
+Создаём выходную папку и записываем список словарей через json.dump. С ensure_ascii=False русские буквы сохраняются напрямую, а indent=2 добавляет переносы строк и отступы в два пробела. Все значения остаются строками: числа автоматически не восстанавливаем.
 
-with open("data/samples/people.json", encoding="utf-8") as jf:
-    """ json.load """
+==========================================================================
 
-with open("data/out/people_from_json.csv", "w", newline="", encoding="utf-8") as cf:
-    """
-        csv.DictReader(f)
-    """
-```
+В файле [data/samples/a.csv](../../data/samples/a.csv) находятся:
 
----
+    a,b,c
+    1,2,a
+    2,3,b
 
-## Проверка и валидация
-- Пустой JSON → `ValueError("Пустой JSON или неподдерживаемая структура")`  
-- Список с не-словарами → `ValueError`  
-- CSV без заголовка или пустой → `ValueError`  
-- CSV отсутствует → ошибка при открытии.  
-- Проверка: количество записей совпадает до и после конвертации.
+Запускаем:
 
----
+    python -c "from src.lab05.json_csv import csv_to_json; csv_to_json('data/samples/a.csv', 'data/out/a_from_csv.json')"
 
-## Набор данных и примеры
-Для вашго удобства подготовлены мини-наборы:
-- `data/samples/people.json` — список объектов одинаковой формы 
-- `data/samples/people.csv` — CSV с теми же данными (для проверки обратимого преобразования).
-- `data/samples/cities.csv` — CSV с 2–3 колонками для демонстрации CSV→XLSX.
+В data/out/a_from_csv.json получаем:
 
-От вас также требуется подготовить по 1 примеру файлов для каждого сценария.
+    [
+      {
+        "a": "1",
+        "b": "2",
+        "c": "a"
+      },
+      {
+        "a": "2",
+        "b": "3",
+        "c": "b"
+      }
+    ]
 
-**Сценарии демонстрации (описываются в README):**
-1. JSON→CSV → проверка заголовка и количества строк.
-2. CSV→JSON → сравнение ключей и количества объектов.
-3. CSV→XLSX → открываем файл в Excel/LibreOffice, проверяем лист и ширины колонок.
+Две строки данных CSV превращаются в два словаря. Названия a, b, c становятся ключами. Числа записаны в кавычках, потому что CSV читается как текст. Поэтому после JSON → CSV → JSON числовые значения становятся строками, а отсутствующие поля — пустыми строками. Полное восстановление исходных типов данных не выполняем.
 
+## ЗАДАНИЕ Б
 
-## Что сдавать
-1. Код в `src/lab05/*`.
-2. Файлы для демонстрации работы  в `data/out/*` и `data/samples/*`.  
-3. `README.md` с командами запуска сценариев, пояснениями, скриншотами результатов.  
+Из openpyxl импортируем Workbook для создания книги Excel и get_column_letter для получения буквенного обозначения колонки по её номеру.
 
-## Критерии допуска
-- Лабораторная работа **выполнена на 100%**
-- Оформлен отчет в README-файле по примеру **effective-broccoli**
+### ФУНКЦИЯ 1
 
-## Критерии приемки
-- Корректность функций и формат ввода/вывода — **20%**  
-- Корректность тест-кейсов, покрытие всех случаев — **20%%**  
-- Качество ответов на вопросы по лабе — **60%**  
+    def csv_to_xlsx(csv_path: str, xlsx_path: str) -> None:
+        if Path(csv_path).suffix.lower() != ".csv":
+            raise ValueError("Входной файл должен быть CSV")
+        if Path(xlsx_path).suffix.lower() != ".xlsx":
+            raise ValueError("Выходной файл должен быть XLSX")
+
+        with open(csv_path, "r", encoding="utf-8", newline="") as file:
+            rows = list(csv.reader(file))
+
+        if not rows or not rows[0] or any(not key.strip() for key in rows[0]):
+            raise ValueError("CSV пустой или отсутствует заголовок")
+        if len(set(rows[0])) != len(rows[0]):
+            raise ValueError("Названия колонок CSV не должны повторяться")
+        for row in rows[1:]:
+            if len(row) != len(rows[0]):
+                raise ValueError("Число значений в строке CSV не совпадает с заголовком")
+
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Sheet1"
+
+        for row in rows:
+            ws.append(row)
+
+        for column in ws.columns:
+            max_length = 0
+
+            for cell in column:
+                if cell.value is not None:
+                    max_length = max(max_length, len(str(cell.value)))
+
+            letter = get_column_letter(column[0].column)
+            ws.column_dimensions[letter].width = max(8, max_length + 2)
+
+        Path(xlsx_path).parent.mkdir(parents=True, exist_ok=True)
+        wb.save(xlsx_path)
+
+Принимаем путь к CSV и путь к XLSX. Проверяем расширения, читаем CSV и сохраняем записи в список rows. Первая запись — заголовок. Проверяем, что файл и названия колонок не пустые, названия не повторяются, а количество значений в каждой строке совпадает с количеством колонок.
+
+Создаём книгу через Workbook(). В wb.active получаем первый лист и задаём ему имя Sheet1. Проходимся по rows и добавляем записи через ws.append(row). Заголовок переносим первой строкой, затем записываем данные. Значения CSV сохраняем в ячейках как строки.
+
+Для подбора ширины перебираем колонки через ws.columns. В каждой колонке находим максимальную длину текста, включая заголовок. None пропускаем, а остальные значения переводим в строку перед вызовом len. Через get_column_letter получаем обозначение колонки: 1 превращается в A, 2 — в B, 27 — в AA.
+
+Ширину устанавливаем по формуле max(8, max_length + 2): добавляем запас в два символа и не допускаем ширину меньше 8. Это подбор по длине текста, без измерения шрифта. После создания нужной папки сохраняем книгу через wb.save(xlsx_path).
+
+====================================================================
+
+Используем тот же файл data/samples/a.csv:
+
+    python -c "from src.lab05.csv_xlsx import csv_to_xlsx; csv_to_xlsx('data/samples/a.csv', 'data/out/a.xlsx')"
+
+В [data/out/a.xlsx](../../data/out/a.xlsx) получаем лист Sheet1 с таблицей:
+
+| a | b | c |
+| --- | --- | --- |
+| 1 | 2 | a |
+| 2 | 3 | b |
+
+В книге три строки с учётом заголовка и три колонки. Максимальная длина значения в каждой колонке равна одному символу, поэтому ширина A, B и C устанавливается в 8.
+
+![Результат CSV → XLSX: лист Sheet1 после экспорта через LibreOffice Calc](../../img/lab05/ex01.png)
