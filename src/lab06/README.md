@@ -1,188 +1,91 @@
-# ЛР6 — CLI‑утилиты с argparse (cat/grep‑lite + конвертеры): Техническое задание
+# ЛАБОРАТОРНАЯ РАБОТА №6
 
-> **Цель:** Научиться создавать консольные инструменты с аргументами командной строки, подкомандами и флагами.  
-> **Связь:** продолжение ЛР5 (работа с JSON/CSV/XLSX) и подготовка к ЛР7 (тестирование).  
-> Основная задача — обернуть существующие функции конвертации и анализа текста в CLI‑оболочки с помощью **argparse**.
+## ЗАДАНИЕ А — РАБОТА С ТЕКСТОМ
 
----
+В файле [cli_text.py](cli_text.py) создаём парсер и подкоманды:
 
-## Результат ЛР
-
-- Модуль `src/lab06/cli_text.py` с подкомандами:
-  - `stats --input <txt> [--top 5]` — анализ частот слов в тексте (использовать функции из `lab03`);
-  - `cat --input <path> [-n]` — вывод содержимого файла построчно (с нумерацией при `-n`).
-
-- Модуль `src/lab06/cli_convert.py` с подкомандами:
-  - `json2csv --in data/samples/people.json --out data/out/people.csv`  
-  - `csv2json --in data/samples/people.csv --out data/out/people.json`  
-  - `csv2xlsx --in data/samples/people.csv --out data/out/people.xlsx`  
-  (использовать функции из `lab05`)
-
-- Примеры запуска и скриншоты терминала — в `images/lab06/`.  
-- `README.md` с кратким описанием всех подкоманд и параметров (`--help` и реальные примеры).  
-- **Только стандартная библиотека** (`argparse`, `os`, `pathlib`, `sys` и ранее написанные функции).  
-- Python **3.хх+**.
-
----
-```
-python_labs/
-├─ README.md                       #Общий отчет
-├─ src/                            # здесь — все скрипты по заданиям
-|  ├─ lib/                         # Переиспользуемые модули - хранить здесь
-|  |  └── io_helpers.py            
-|  ├─ lab01
-|  ........
-|  ├─ lab05  
-|  ├─ lab06/                       # Реализация кода
-│  |   ├─ cli_text.py              
-│  |   ├─ cli_convert.py
-│  |   └─ __init__.py
-|  ........
-|  └─ lab10
-├─ data/
-|   ├── samples
-│   └── out
-|
-└─ images/                         # сюда — скриншоты работы программ
-   ├─ lab01
-   ........
-   └─ lab10
-```
----
-
-## Теоретическая часть
-
-### Что такое CLI‑утилита
-**CLI (Command Line Interface)** — интерфейс взаимодействия через консоль.  
-CLI‑программы позволяют вызывать функции программы через команды и флаги, например:
-```bash
-python -m src.lab06.cli_convert json2csv --in data/samples/people.json --out data/out/people.csv
-```
-
-### Что такое argparse
-Модуль **argparse** — стандартный инструмент Python для парсинга аргументов командной строки.
-
-**Основные понятия:**
-- `ArgumentParser` — объект, описывающий интерфейс программы;
-- `add_argument()` — добавление параметров (`--input`, `--output`, `-n`, и т.д.);
-- `add_subparsers()` — создание подкоманд (`stats`, `cat`, `json2csv` и др.).
-
-**Минимальный пример:**
 ```python
-import argparse
-
-parser = argparse.ArgumentParser(description="Пример CLI")
-parser.add_argument("--name", required=True, help="Имя пользователя")
+parser = argparse.ArgumentParser(description="CLI‑утилиты лабораторной №6")
+subparsers = parser.add_subparsers(dest="command")
 args = parser.parse_args()
-print(f"Привет, {args.name}!")
 ```
 
-**Результат запуска:**
+Между созданием `subparsers` и вызовом `parse_args()` описываем команды через `add_parser()` и их параметры через `add_argument()`. Выбранная команда сохраняется в `args.command`, а значения параметров — в остальных полях `args`.
+
+### ПОДКОМАНДА CAT
+
+```python
+path = Path(args.input)
+
+with path.open(encoding="utf-8") as file:
+    for number, line in enumerate(file, start=1):
+        if args.n:
+            print(f"{number}: {line}", end="")
+        else:
+            print(line, end="")
+```
+
+Через обязательный `--input` получаем путь к текстовому файлу. Читаем его построчно в UTF-8. Флаг `-n` с `action="store_true"` включает нумерацию: `enumerate` считает строки с единицы. Через `end=""` убираем дополнительный перенос от `print`.
+
 ```bash
-$ python hello.py --name Alice
-Привет, Alice!
+python -m src.lab06.cli_text cat --input data/samples/a.csv -n
 ```
----
 
-## Примеры кода
+Получаем заголовок CSV и две строки данных с номерами от 1 до 3. Без `-n` выводим только содержимое файла.
 
-### Пример 1. Подкоманды в одном CLI
+### ПОДКОМАНДА STATS
+
 ```python
-import argparse
+path = Path(args.input)
 
-def main():
-    parser = argparse.ArgumentParser(description="CLI‑утилиты лабораторной №6")
-    subparsers = parser.add_subparsers(dest="command")
+with path.open(encoding='utf-8') as file:
+    text = file.read()
 
-    # подкоманда cat
-    cat_parser = subparsers.add_parser("cat", help="Вывести содержимое файла")
-    cat_parser.add_argument("--input", required=True)
-    cat_parser.add_argument("-n", action="store_true", help="Нумеровать строки")
-
-    # подкоманда stats
-    stats_parser = subparsers.add_parser("stats", help="Частоты слов")
-    stats_parser.add_argument("--input", required=True)
-    stats_parser.add_argument("--top", type=int, default=5)
-
-    args = parser.parse_args()
-
-    if args.command == "cat":
-        """ Реализация команды cat """
-    elif args.command == "stats":
-        """ Реализация команды stats """
+print(text_statistic(text=text, n=args.top, table_form=args.table_form))
 ```
 
----
+Читаем текст по пути `--input` и передаём в `text_statistic` из `src/lib/text_stats.py`. Эта функция использует нормализацию и подсчёт частот из ЛР3. Через `--top` задаём количество слов, по умолчанию 5. Флаг `--table` включает табличный вывод.
 
-### Пример 2. CLI‑конвертер
+```bash
+python -m src.lab06.cli_text stats --input data/samples/input.txt --top 5
+python -m src.lab06.cli_text stats --input data/samples/input.txt --table --top 4
+```
+
+В `input.txt` получаем 10 слов и 7 уникальных. Слово «люблю» встречается 4 раза, остальные — по одному. При одинаковой частоте слова сортируются по алфавиту. В таблице выводим четыре слова.
+
+![Вывод файла с нумерацией и статистика текста](../../img/lab06/ex01.png)
+
+## ЗАДАНИЕ Б — КОНВЕРТАЦИЯ ФАЙЛОВ
+
+В файле [cli_convert.py](cli_convert.py) создаём три подкоманды: `json2csv`, `csv2json` и `csv2xlsx`. У каждой обязательны `--in` и `--out` — пути к входному и выходному файлам.
+
 ```python
-import argparse
-from src.lab05.json_csv import json_to_csv, csv_to_json
-from src.lab05.csv_xlsx import csv_to_xlsx
-
-def main():
-    parser = argparse.ArgumentParser(description="Конвертеры данных")
-    sub = parser.add_subparsers(dest="cmd")
-
-    p1 = sub.add_parser("json2csv")
-    p1.add_argument("--in", dest="input", required=True)
-    p1.add_argument("--out", dest="output", required=True)
-
-    p2 = sub.add_parser("csv2json")
-    p2.add_argument("--in", dest="input", required=True)
-    p2.add_argument("--out", dest="output", required=True)
-
-    p3 = sub.add_parser("csv2xlsx")
-    p3.add_argument("--in", dest="input", required=True)
-    p3.add_argument("--out", dest="output", required=True)
-
-    args = parser.parse_args()
-
-    """
-        Вызываем код в зависимости от аргументов.
-    """
+pJ2C = sub.add_parser("json2csv")
+pJ2C.add_argument("--in", dest="input", required=True)
+pJ2C.add_argument("--out", dest="output", required=True)
 ```
 
----
+Аналогично описываем две остальные команды. Через `dest` сохраняем пути в `args.input` и `args.output`. Выбранная подкоманда находится в `args.cmd`.
 
-## Проверка и демонстрация
+```python
+if args.cmd == "json2csv":
+    json_to_csv(args.input, args.output)
+elif args.cmd == "csv2json":
+    csv_to_json(args.input, args.output)
+elif args.cmd == "csv2xlsx":
+    csv_to_xlsx(args.input, args.output)
+```
 
-**Файлы для демонстрации:**
-- Использовать данные из `data/samples/` из ЛР5.  
-- Результаты сохраняются в `data/out/`.
+Вызываем готовые функции из ЛР5, которые читают исходные данные и записывают результат. Для XLSX используется `openpyxl` из ЛР5.
 
-**Сценарии проверки (описать в README):**
-1. `cat --input data/samples/people.csv -n` → вывод строк с номерами.  
-2. `stats --input data/samples/people.txt --top 5` → вывод топ‑слов.  
-3. `json2csv`, `csv2json`, `csv2xlsx` — корректная конвертация без ошибок.  
-4. Проверка `--help` для каждой подкоманды.
+```bash
+python -m src.lab06.cli_convert json2csv --in data/samples/a.json --out data/out/lab06_from_json.csv
+python -m src.lab06.cli_convert csv2json --in data/samples/a.csv --out data/out/lab06_from_csv.json
+python -m src.lab06.cli_convert csv2xlsx --in data/samples/a.csv --out data/out/lab06.xlsx
+```
 
----
+В [CSV](../../data/out/lab06_from_json.csv) получаем заголовок `a,b,c` и две строки данных. В [JSON](../../data/out/lab06_from_csv.json) — два словаря со строковыми значениями. В [XLSX](../../data/out/lab06.xlsx) — лист `Sheet1` с тремя строками и тремя колонками, включая заголовок.
 
-## Валидация и обработка ошибок
-- Отсутствие входного файла → `FileNotFoundError`.  
-- Неверные аргументы → вывод `parser.error(...)`.  
-- Все сообщения — понятные, человекочитаемые.  
-- Вывод справки (`--help`) должен работать без ошибок.  
-- Код не должен зависеть от внешних библиотек.
+Конвертеры ничего не печатают при успехе. На скриншоте после запуска отдельно читаем созданные файлы, чтобы проверить содержимое.
 
----
-
-## Что сдавать
-1. Код в `src/lab06/*`  
-2. Файлы демонстрации в `data/out/`  
-3. `README.md` с командами запуска и примерами вывода (скриншоты) 
-4. Скриншоты в `images/lab06/`
-
----
-
-## Критерии допуска
-- Лабораторная работа **выполнена на 100%**
-- Оформлен отчет в README-файле по примеру **effective-broccoli**
-
-## Критерии приёмки
-- Корректность работы всех CLI‑команд — **20%**  
-- Наличие справки (`--help`) и ошибок — **20%**  
-- Ответы на вопросы по теории (argparse, CLI, структура) — **60%** 
-
-
+![Конвертация JSON, CSV и XLSX с проверкой результатов](../../img/lab06/ex02.png)
