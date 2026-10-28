@@ -7,16 +7,16 @@ def main() -> None:
     sub = parser.add_subparsers(dest="cmd")
 
     pJ2C = sub.add_parser("json2csv")
-    pJ2C.add_argument("--in", dest="input", required=True)
-    pJ2C.add_argument("--out", dest="output", required=True)
+    pJ2C.add_argument("--in", dest="input", required=True, help='Путь к JSON файлу')
+    pJ2C.add_argument("--out", dest="output", required=True, help='Путь к CSV файлу')
 
     pC2J = sub.add_parser("csv2json")
-    pC2J.add_argument("--in", dest="input", required=True)
-    pC2J.add_argument("--out", dest="output", required=True)
+    pC2J.add_argument("--in", dest="input", required=True, help='Путь к CSV файлу')
+    pC2J.add_argument("--out", dest="output", required=True, help='Путь к JSON файлу')
 
     pC2X = sub.add_parser("csv2xlsx")
-    pC2X.add_argument("--in", dest="input", required=True)
-    pC2X.add_argument("--out", dest="output", required=True)
+    pC2X.add_argument("--in", dest="input", required=True, help='Путь к CSV файлу')
+    pC2X.add_argument("--out", dest="output", required=True, help="Путь к XSLX файлу")
 
     args = parser.parse_args()
 

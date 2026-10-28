@@ -16,10 +16,7 @@ def csv_to_xlsx(csv_path: str, xlsx_path: str) -> None:
         raise ValueError("CSV пустой или отсутствует заголовок")
     if len(set(rows[0])) != len(rows[0]):
         raise ValueError("Названия колонок CSV не должны повторяться")
-    for row in rows[1:]:
-        if len(row) != len(rows[0]):
-            raise ValueError("Число значений в строке CSV не совпадает с заголовком")
-
+    
     wb = Workbook()
     ws = wb.active
     ws.title = "Sheet1"

@@ -44,11 +44,11 @@ with path.open(encoding='utf-8') as file:
 print(text_statistic(text=text, n=args.top, table_form=args.table_form))
 ```
 
-Читаем текст по пути `--input` и передаём в `text_statistic` из `src/lib/text_stats.py`. Эта функция использует нормализацию и подсчёт частот из ЛР3. Через `--top` задаём количество слов, по умолчанию 5. Флаг `--table` включает табличный вывод.
+Читаем текст по пути `--input` и передаём в `text_statistic` из `src/lib/text_stats.py`. Эта функция использует нормализацию и подсчёт частот из ЛР3. Через `--top` задаём количество слов, по умолчанию 5. Флаг `-table` включает табличный вывод.
 
 ```bash
 python -m src.lab06.cli_text stats --input data/samples/input.txt --top 5
-python -m src.lab06.cli_text stats --input data/samples/input.txt --table --top 4
+python -m src.lab06.cli_text stats --input data/samples/input.txt -table --top 4
 ```
 
 В `input.txt` получаем 10 слов и 7 уникальных. Слово «люблю» встречается 4 раза, остальные — по одному. При одинаковой частоте слова сортируются по алфавиту. В таблице выводим четыре слова.

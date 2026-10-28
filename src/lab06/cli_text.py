@@ -7,12 +7,12 @@ def main() -> None:
     subparsers = parser.add_subparsers(dest="command")
 
     cat_parser = subparsers.add_parser("cat", help="Вывести содержимое файла")
-    cat_parser.add_argument("--input", dest="input", required=True)
+    cat_parser.add_argument("--input", dest="input", required=True, help="Путь к файлу")
     cat_parser.add_argument("-n", action="store_true", help="Нумеровать строки")
 
     stats_parser = subparsers.add_parser("stats", help="Частоты слов")
-    stats_parser.add_argument("--input", dest="input", required=True)
-    stats_parser.add_argument("--table", dest="table_form", action="store_true")
+    stats_parser.add_argument("--input", dest="input", required=True, help="Путь к файлу")
+    stats_parser.add_argument("-table", dest="table_form", action="store_true")
     stats_parser.add_argument("--top", dest="top", type=int, default=5)
 
     args = parser.parse_args()
