@@ -1,9 +1,13 @@
 def bubble_sort(nums: list[int | float]) -> list[int | float]:
     nums = list(nums)
-    for i in range(len(nums)):
-        for j in range(i + 1, len(nums)):
-            if nums[i] > nums[j]:
-                nums[i], nums[j] = nums[j], nums[i]
+    for end in range(len(nums) - 1, 0, -1):
+        swapped = False
+        for j in range(end):
+            if nums[j] > nums[j + 1]:
+                nums[j], nums[j + 1] = nums[j + 1], nums[j]
+                swapped = True
+        if not swapped:
+            break
     return nums
 
 def insertion_sort(nums: list[int | float]) -> list[int | float]:

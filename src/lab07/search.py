@@ -1,4 +1,4 @@
-def line_search(nums: list[int | float], x: int | float) -> int:
+def linear_search(nums: list[int | float], x: int | float) -> int:
     for index in range(len(nums)):
         if nums[index] == x:
             return index
@@ -17,7 +17,7 @@ def binary_search(sorted_nums: list[int | float], x) -> int:
             higth = middle - 1
     return -1
 
-def two_sum_brut(nums: list[int | float], target: int | float) -> tuple[int, int] | None:
+def two_sum_brute(nums: list[int | float], target: int | float) -> tuple[int, int] | None:
     for first in range(len(nums)):
         for second in range(first + 1, len(nums)):
             if nums[first] + nums[second] == target:

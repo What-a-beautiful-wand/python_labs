@@ -1,9 +1,12 @@
 import random
 
-from src.lab07.search import line_search, binary_search, two_sum_brut, two_sum_fast
+from src.lab07.search import linear_search, binary_search, two_sum_brute, two_sum_fast
 from src.lab07.sorting import bubble_sort, insertion_sort, selection_sort
 
+checks_count = 0
+
 def check_search(trials = 100) -> None:
+    global checks_count
     cases = [[], [4], [1, 2], [1, 1, 1, 5], [-5, 0 , 0 , 7]]
 
     for _ in range(trials):
@@ -22,9 +25,9 @@ def check_search(trials = 100) -> None:
             except ValueError:
                 expected = -1
             
-            result = line_search(nums, number)
+            result = linear_search(nums, number)
             assert result == expected, (
-                f'Ошибка в line_search: {nums} target: {number}.'
+                f'Ошибка в linear_search: {nums} target: {number}.'
                 f'Ожидалось: {expected}, получено: {result}'
             )
             
@@ -44,12 +47,14 @@ def check_search(trials = 100) -> None:
                     f'target={number}, result={result}'
                 )
                 
+    checks_count += len(cases)
     print(f'Проверка search прошла успешно. Проверено {len(cases)} тестов.')
     return None
 
 #===================================================================================
 
 def check_two_sum(trials = 100) -> None:
+    global checks_count
     cases = [([], 0), ([3], 5), ([3, 3], 6), ([1, 2], 10), ([-3, 4, 2], -1)]
     for _ in range(trials):
         n = random.randint(0, 50)
@@ -58,7 +63,7 @@ def check_two_sum(trials = 100) -> None:
         cases.append((nums, target))
 
     for nums, target in cases:
-        brute = two_sum_brut(nums, target)
+        brute = two_sum_brute(nums, target)
         fast = two_sum_fast(nums, target)
 
         assert (brute is None) == (fast is None), (
@@ -78,12 +83,14 @@ def check_two_sum(trials = 100) -> None:
                     f'nums: {nums}, target: {target}'
                 )
 
+    checks_count += len(cases)
     print(f'Проверка two_sum прошла успешно. Пройдено {len(cases)} тестов.')
     return None
 
 #===================================================================================
 
-def check_sort(fn, trials = 100) -> None:
+def check_sorting(fn, trials = 100) -> None:
+    global checks_count
     cases = [[], [5], [2, 2], [3, 2, 1], [-2, 0, -5, 0]]
 
     for _ in range(trials):
@@ -106,6 +113,7 @@ def check_sort(fn, trials = 100) -> None:
         assert result is not nums, (
             f'{fn.__name__} должна возвращать новый список'
         )
+    checks_count += len(cases)
     print(f'Проверка {fn.__name__} успешно пройдена. Пройдено: {len(cases)} тестов.')
 
 if __name__ == "__main__":
@@ -113,5 +121,5 @@ if __name__ == "__main__":
     check_search()
     check_two_sum()
     for fun in (bubble_sort, insertion_sort, selection_sort):
-        check_sort(fn=fun)
-    print('OK: все проверки пройдены')
+        check_sorting(fn=fun)
+    print(f'OK: {checks_count} проверок')

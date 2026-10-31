@@ -2,10 +2,11 @@ import argparse
 import random
 import signal
 import timeit
+from math import isfinite
 from pathlib import Path
 
 from src.lab04.io_txt_csv import write_csv
-from src.lab07.search import binary_search, line_search, two_sum_brut, two_sum_fast
+from src.lab07.search import binary_search, linear_search, two_sum_brute, two_sum_fast
 from src.lab07.sorting import bubble_sort, insertion_sort, selection_sort
 
 
@@ -19,6 +20,9 @@ SEARCH_QUERIES = 10_000
 #===============================================================================
 
 def measure_sort(fn, data, timeout=60):
+    if not isfinite(timeout) or timeout <= 0:
+        raise ValueError("timeout должен быть положительным конечным числом")
+
     def stop_sorting(signum, frame):
         raise TimeoutError("Превышен лимит времени сортировки")
 
@@ -60,13 +64,13 @@ def bench_search(n=SEARCH_SIZE, queries_count=SEARCH_QUERIES):
 
     def run_linear():
         for x in queries:
-            line_search(data, x)
+            linear_search(data, x)
 
     def run_binary():
         for x in queries:
             binary_search(ordered, x)
 
-    rows.append(("search", n, "line_search", timeit.timeit(run_linear, number=1)))
+    rows.append(("search", n, "linear_search", timeit.timeit(run_linear, number=1)))
     rows.append(("search", n, "binary_search", timeit.timeit(run_binary, number=1)))
     return rows
 
@@ -80,7 +84,7 @@ def bench_two_sum(n):
     target = -3
     rows = []
 
-    for fn in (two_sum_brut, two_sum_fast):
+    for fn in (two_sum_brute, two_sum_fast):
         seconds = timeit.timeit(lambda: fn(data, target), number=1)
         rows.append(("two_sum", n, fn.__name__, seconds))
 
@@ -100,11 +104,13 @@ def main() -> None:
     parser.add_argument('--out', dest='out', required=True, help='Путь к отчётному файлу')
     parser.add_argument('--timeout', dest='timeout', type=float, default=60.0, help='Время обрыва функций')
     args = parser.parse_args()
+    if not isfinite(args.timeout) or args.timeout <= 0:
+        parser.error("--timeout должен быть положительным конечным числом")
     OUTPUT_PATH = Path(args.out)
-    random.seed(67)
+    random.seed(42)
     rows = []
     print("seconds — время одного запуска; для поиска — всех запросов.")
-    print("Свои сортировки при n >= 100 000 ограничены 60 секундами каждая.")
+    print(f"Свои сортировки при n >= 100 000 ограничены {args.timeout} секундами каждая.")
     print(f"{HEADER[0]:<16} {HEADER[1]:>9} {HEADER[2]:<20} {HEADER[3]:>14}")
 
     for n in SORT_SIZES:
