@@ -60,7 +60,7 @@ def student_age(rec: dict, today=None) -> int:
 
 def format_student(rec: dict) -> str:
     age = student_age(rec)
-    parts = rec["fio"].split()
+    parts = rec["fio"].split()[:3]
     initials = "".join(part[0].upper() + "." for part in parts[1:])
     name = f"{parts[0]} {initials}".strip()
     if 11 <= age % 100 <= 14:

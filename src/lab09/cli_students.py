@@ -1,47 +1,86 @@
-import csv
 import argparse
+import csv
+import sys
 from pathlib import Path
-from lab04.io_txt_csv import write_csv
-from lab08.serialize import students_from_csv
-from lab08.models import validate_student, STUDENT_FIELDS
+
+from src.lab08.models import format_student
+from src.lab09.group import (
+    add_student,
+    ensure_storage,
+    find_students,
+    list_students,
+    remove_student,
+    update_student,
+)
 
 DB_FILE = Path("data/lab09/students.csv")
 
-def save_students(students, path=DB_FILE):
-    with Path(path).open("w", newline="", encoding="utf-8") as file:
-        writer = csv.DictWriter(file, fieldnames=STUDENT_FIELDS)
-        writer.writeheader()
-        writer.writerows(students)
-
-
-def add_student(rec: dict, path=DB_FILE) -> None:
-    validate_student(rec)
-    students = students_from_csv(DB_FILE)
-    students.append(rec)
-    save_students(students, path=path)
 
 def main():
-    parser = argparse.ArgumentParser(description="Парсер для БД")
-    sub_parser = parser.add_subparsers(dest="cmd")
+    parser = argparse.ArgumentParser(description="База данных студентов")
+    parser.add_argument("--db", type=Path, default=DB_FILE, help="Путь к хранилищу")
+    sub_parser = parser.add_subparsers(dest="cmd", required=True)
 
-    parser.add_argument("--db", dest="db", help="Путь к хранилищу")
+    add = sub_parser.add_parser("add")
+    add.add_argument("--fio", required=True, help="ФИО студента")
+    add.add_argument("--birthdate", required=True, help="Дата рождения YYYY-MM-DD")
+    add.add_argument("--group", required=True, help="Группа студента")
+    add.add_argument("--gpa", required=True, type=float, help="GPA студента")
 
-    add = sub_parser.add_parser("Add student")
-    add.add_argument("--fio", dest="fio", required=True, type=str, help="ФИО студента")
-    add.add_argument("--birthdate", dest="birthdate", required=True, type=str, help="Дата рождения студента")
-    add.add_argument("--group", dest="group", required=True, type=str, help="Группа студента")
-    add.add_argument("--gpa", dest="gpa", required=True, type=float, help="GPA студента")
+    list_student = sub_parser.add_parser("list")
+    list_student.add_argument("--sort", dest="key", help="Ключ сортировки: fio или gpa")
+    list_student.add_argument("-rev", action="store_true", default=False, help="Обратный порядок")
+
+    find = sub_parser.add_parser("find")
+    find.add_argument("--q", required=True, help="Подстрока в ФИО")
+
+    remove = sub_parser.add_parser("remove")
+    remove.add_argument("--fio", required=True, help="ФИО студента")
+
+    update = sub_parser.add_parser("update")
+    update.add_argument("--fio", required=True, help="ФИО студента")
+    update.add_argument("--gpa", type=float, help="Новый GPA")
+    update.add_argument("--group", help="Новая группа")
+    update.add_argument("--birthdate", help="Новая дата рождения YYYY-MM-DD")
 
     args = parser.parse_args()
 
-    if args.cmd == "Add student":
+
+    ensure_storage(args.db)
+    if args.cmd == "add":
         new_student = {
             "fio": args.fio,
             "birthdate": args.birthdate,
             "group": args.group,
-            "gpa": args.gpa
+            "gpa": args.gpa,
         }
-        validate_student(rec=new_student)
+        add_student(args.db, new_student)
+        print("Добавлен студент")
+        print(format_student(new_student))
+
+    elif args.cmd == "list":
+        for student in list_students(args.db, sort_by=args.key, reverse=args.rev):
+            print(format_student(student))
+
+    elif args.cmd == "find":
+        for student in find_students(args.db, args.q):
+            print(format_student(student))
+                
+    elif args.cmd == "remove":
+        print(f"Удалено: {remove_student(args.db, args.fio)}")
+            
+    elif args.cmd == "update":
+        fields = {
+            field: getattr(args, field)
+            for field in ("gpa", "group", "birthdate")
+            if getattr(args, field) is not None
+        }
+        if not fields:
+            raise ValueError("Укажите хотя бы одно поле для обновления")
+        if update_student(args.db, args.fio, **fields):
+            print("Студент обновлён")
+        else:
+            print("Студент не найден")
 
 
 if __name__ == "__main__":

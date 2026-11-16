@@ -1,7 +1,9 @@
-import csv
 from operator import itemgetter
 from pathlib import Path
-from src.lab08.models import STUDENT_FIELDS, student_from_dict, validate_student
+
+from src.lab04.io_txt_csv import write_csv
+from src.lab08.models import STUDENT_FIELDS, validate_student
+from src.lab08.serialize import students_from_csv
 
 HEADER = STUDENT_FIELDS
 
@@ -9,29 +11,28 @@ HEADER = STUDENT_FIELDS
 def ensure_storage(path):
     path = Path(path)
     if not path.exists():
-        with path.open("w", newline="", encoding="utf-8") as file:
-            csv.DictWriter(file, fieldnames=HEADER).writeheader()
+        save_students(path, [])
 
 
 def load_students(path):
-    with Path(path).open("r", newline="", encoding="utf-8") as file:
-        return [student_from_dict(row) for row in csv.DictReader(file)]
+    return students_from_csv(path)
 
 
 def save_students(path, students):
-    with Path(path).open("w", newline="", encoding="utf-8") as file:
-        writer = csv.DictWriter(file, fieldnames=HEADER)
-        writer.writeheader()
-        writer.writerows(students)
+    rows = []
+    for student in students:
+        validate_student(student)
+        rows.append(tuple(student[field] for field in HEADER))
+    write_csv(rows, path, header=HEADER)
 
 
-def list_students(path, sort_by=None):
+def list_students(path, sort_by=None, reverse=False):
     if sort_by not in (None, "fio", "gpa"):
         raise ValueError(f"Unknown sort field: {sort_by}")
     students = load_students(path)
     if sort_by is None:
         return students
-    return sorted(students, key=itemgetter(sort_by))
+    return sorted(students, key=itemgetter(sort_by), reverse=reverse)
 
 
 def add_student(path, student):
