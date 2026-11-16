@@ -11,6 +11,7 @@ from src.lab09.group import (
     list_students,
     remove_student,
     update_student,
+    stats_student
 )
 
 DB_FILE = Path("data/lab09/students.csv")
@@ -42,6 +43,8 @@ def main():
     update.add_argument("--gpa", type=float, help="Новый GPA")
     update.add_argument("--group", help="Новая группа")
     update.add_argument("--birthdate", help="Новая дата рождения YYYY-MM-DD")
+
+    stats = sub_parser.add_parser("stats")
 
     args = parser.parse_args()
 
@@ -82,6 +85,14 @@ def main():
         else:
             print("Студент не найден")
 
+    elif args.cmd == "stats":
+        stat = stats_student(args.db)
+        for key in stat:
+            print(f"{key}: {stat[key]}")
+
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except ValueError as error:
+        sys.exit(str(error))

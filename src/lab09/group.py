@@ -2,7 +2,7 @@ from operator import itemgetter
 from pathlib import Path
 
 from src.lab04.io_txt_csv import write_csv
-from src.lab08.models import STUDENT_FIELDS, validate_student
+from src.lab08.models import STUDENT_FIELDS, validate_student, format_student
 from src.lab08.serialize import students_from_csv
 
 HEADER = STUDENT_FIELDS
@@ -38,6 +38,10 @@ def list_students(path, sort_by=None, reverse=False):
 def add_student(path, student):
     validate_student(student)
     students = load_students(path)
+    fio = " ".join(student["fio"].split())
+    for existing in students:
+        if existing["fio"] == fio:
+            raise ValueError(f"Студент с ФИО «{fio}» уже есть в базе")
     students.append(student)
     save_students(path, students)
 
@@ -71,3 +75,32 @@ def update_student(path, fio, **fields):
             save_students(path, rows)
             return True
     return False
+
+
+def stats_student(path) -> dict:
+    students = load_students(path)
+    count = len(students)
+    groups = {}
+    top_students = []
+    total_gpa = 0
+    min_gpa = None
+    for student in students:
+        group = student["group"]
+        groups[group] = groups.get(group, 0) + 1
+        gpa = student["gpa"]
+        total_gpa += gpa
+        if min_gpa is None or gpa < min_gpa:
+            min_gpa = gpa
+
+        if len(top_students) < 5 or gpa > top_students[-1]["gpa"]:
+            top_students.append(student)
+            top_students.sort(key=lambda row: row["gpa"], reverse=True)
+            del top_students[5:]
+    return {
+        "count": count,
+        "min_gpa": min_gpa,
+        "max_gpa": top_students[0]["gpa"] if top_students else None,
+        "avg_gpa": f"{total_gpa / count:.2f}" if count else None,
+        "groups": groups,
+        "top_5_students": "".join(f"\n{format_student(student)}" for student in top_students),
+    }
