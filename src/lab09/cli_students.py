@@ -91,8 +91,5 @@ def main():
             print(f"{key}: {stat[key]}")
 
 
-if __name__ == "__main__":
-    try:
-        main()
-    except ValueError as error:
-        sys.exit(str(error))
+if __name__ == "__main__": 
+    main()
