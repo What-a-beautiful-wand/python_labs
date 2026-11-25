@@ -1,8 +1,8 @@
+import csv
 from operator import itemgetter
 from pathlib import Path
 
-from src.lab04.io_txt_csv import write_csv
-from src.lab08.models import STUDENT_FIELDS, validate_student, format_student
+from src.lab08.models import STUDENT_FIELDS, validate_student
 from src.lab08.serialize import students_from_csv
 
 HEADER = STUDENT_FIELDS
@@ -22,8 +22,21 @@ def save_students(path, students):
     rows = []
     for student in students:
         validate_student(student)
-        rows.append(tuple(student[field] for field in HEADER))
-    write_csv(rows, path, header=HEADER)
+        rows.append(student.copy())
+
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    new_path = path.with_name(path.name + ".new")
+    new_file = new_path.open("x", encoding="utf-8", newline="")
+    try:
+        with new_file:
+            writer = csv.DictWriter(new_file, fieldnames=HEADER)
+            writer.writeheader()
+            writer.writerows(rows)
+        new_path.replace(path)
+    except BaseException:
+        new_path.unlink(missing_ok=True)
+        raise
 
 
 def list_students(path, sort_by=None, reverse=False):
@@ -102,5 +115,8 @@ def stats_student(path) -> dict:
         "max_gpa": top_students[0]["gpa"] if top_students else None,
         "avg_gpa": f"{total_gpa / count:.2f}" if count else None,
         "groups": groups,
-        "top_5_students": "".join(f"\n{format_student(student)}" for student in top_students),
+        "top_5_students": [
+            {"fio": student["fio"], "gpa": student["gpa"]}
+            for student in top_students
+        ]
     }
