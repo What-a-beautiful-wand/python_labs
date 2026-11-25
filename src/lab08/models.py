@@ -6,30 +6,38 @@ STUDENT_FIELDS = ("fio", "birthdate", "group", "gpa")
 
 def validate_date(birthdate: str) -> None:
     if not isinstance(birthdate, str):
-        raise ValueError("Дата рождения должна быть строкой YYYY-MM-DD")
+        raise TypeError(f"birthdate: ожидалась строка YYYY-MM-DD, получено {birthdate!r}")
     try:
         value = datetime.date.fromisoformat(birthdate)
     except ValueError:
-        raise ValueError("Дата рождения должна существовать и иметь формат YYYY-MM-DD") from None
+        raise ValueError(f"birthdate: ожидалась существующая дата YYYY-MM-DD, получено {birthdate!r}") from None
     if value.isoformat() != birthdate:
-        raise ValueError("Дата рождения должна иметь формат YYYY-MM-DD")
+        raise ValueError(f"birthdate: ожидался формат YYYY-MM-DD, получено {birthdate!r}")
     if value > datetime.date.today():
-        raise ValueError("Дата рождения не может быть в будущем")
+        raise ValueError(f"birthdate: ожидалась дата не позднее сегодняшней, получено {birthdate!r}")
 
 
 def validate_student(rec: dict) -> None:
-    if not isinstance(rec, dict) or set(rec) != set(STUDENT_FIELDS):
+    if not isinstance(rec, dict):
+        raise TypeError(f"Запись студента: ожидался словарь, получено {type(rec).__name__}")
+    if set(rec) != set(STUDENT_FIELDS):
         raise ValueError("Нужны ровно поля fio, birthdate, group, gpa")
-    if not isinstance(rec["fio"], str) or not rec["fio"].strip():
-        raise ValueError("ФИО должно быть непустой строкой")
-    if not isinstance(rec["group"], str) or not rec["group"].strip():
-        raise ValueError("Группа должна быть непустой строкой")
+    for field in ("fio", "group"):
+        value = rec[field]
+        if not isinstance(value, str):
+            raise TypeError(f"{field}: ожидалась строка, получено {value!r}")
+        if not value.strip():
+            raise ValueError(f"{field}: ожидалась непустая строка, получено {value!r}")
+        try:
+            value.encode("utf-8")
+        except UnicodeEncodeError:
+            raise ValueError(f"Поле {field} содержит недопустимый символ Unicode") from None
     validate_date(rec["birthdate"])
     gpa = rec["gpa"]
     if isinstance(gpa, bool) or not isinstance(gpa, (int, float)):
-        raise ValueError("GPA должно быть числом")
+        raise TypeError(f"GPA: ожидалось число, получено {gpa!r}")
     if not 0 <= gpa <= 5:
-        raise ValueError("GPA должно быть от 0 до 5")
+        raise ValueError(f"GPA: ожидалось число от 0 до 5, получено {gpa!r}")
 
 
 def make_student(fio: str, birthdate: str, group: str, gpa: int | float) -> dict:
@@ -49,7 +57,7 @@ def student_age(rec: dict, today=None) -> int:
     if today is None:
         today = datetime.date.today()
     if not isinstance(today, datetime.date):
-        raise ValueError("today должна быть датой")
+        raise TypeError(f"today: ожидалась дата, получено {today!r}")
     age = today.year - birthdate.year
     if (today.month, today.day) < (birthdate.month, birthdate.day):
         age -= 1
@@ -60,7 +68,7 @@ def student_age(rec: dict, today=None) -> int:
 
 def format_student(rec: dict) -> str:
     age = student_age(rec)
-    parts = rec["fio"].split()[:3]
+    parts = rec["fio"].split()
     initials = "".join(part[0].upper() + "." for part in parts[1:])
     name = f"{parts[0]} {initials}".strip()
     if 11 <= age % 100 <= 14:
@@ -81,17 +89,17 @@ def student_to_dict(rec: dict) -> dict:
 
 def student_from_dict(d: dict) -> dict:
     if not isinstance(d, dict):
-        raise ValueError("Данные студента должны быть словарём")
+        raise TypeError(f"Запись студента: ожидался словарь, получено {type(d).__name__}")
     try:
         rec = {field: d[field] for field in STUDENT_FIELDS}
     except KeyError as error:
         raise ValueError(f"Не указано поле {error.args[0]}") from None
-    if isinstance(rec["gpa"], bool) or not isinstance(rec["gpa"], (int, float, str)):
-        raise ValueError("GPA должно быть числом")
-    try:
-        rec["gpa"] = float(rec["gpa"])
-    except (TypeError, ValueError, OverflowError):
-        raise ValueError("GPA должно быть числом") from None
+    gpa = rec["gpa"]
+    if isinstance(gpa, str):
+        try:
+            rec["gpa"] = float(gpa)
+        except ValueError:
+            raise ValueError(f"GPA: ожидалась числовая запись, получено {gpa!r}") from None
     return make_student(**rec)
 
 

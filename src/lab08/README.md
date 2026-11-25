@@ -7,15 +7,15 @@
 ```python
 def validate_date(birthdate: str) -> None:
     if not isinstance(birthdate, str):
-        raise ValueError("Дата рождения должна быть строкой YYYY-MM-DD")
+        raise TypeError(f"birthdate: ожидалась строка YYYY-MM-DD, получено {birthdate!r}")
     try:
         value = datetime.date.fromisoformat(birthdate)
     except ValueError:
-        raise ValueError("Дата рождения должна существовать и иметь формат YYYY-MM-DD") from None
+        raise ValueError(f"birthdate: ожидалась существующая дата YYYY-MM-DD, получено {birthdate!r}") from None
     if value.isoformat() != birthdate:
-        raise ValueError("Дата рождения должна иметь формат YYYY-MM-DD")
+        raise ValueError(f"birthdate: ожидался формат YYYY-MM-DD, получено {birthdate!r}")
     if value > datetime.date.today():
-        raise ValueError("Дата рождения не может быть в будущем")
+        raise ValueError(f"birthdate: ожидалась дата не позднее сегодняшней, получено {birthdate!r}")
 ```
 
 Принимаем дату рождения строкой. Через `date.fromisoformat` проверяем существование даты, а сравнением с `isoformat()` — точный формат `YYYY-MM-DD`. Поэтому `2003-02-30`, запись без дефисов и будущая дата вызывают `ValueError` с причиной.
@@ -24,23 +24,31 @@ def validate_date(birthdate: str) -> None:
 
 ```python
 def validate_student(rec: dict) -> None:
-    if not isinstance(rec, dict) or set(rec) != set(STUDENT_FIELDS):
+    if not isinstance(rec, dict):
+        raise TypeError(f"Запись студента: ожидался словарь, получено {type(rec).__name__}")
+    if set(rec) != set(STUDENT_FIELDS):
         raise ValueError("Нужны ровно поля fio, birthdate, group, gpa")
-    if not isinstance(rec["fio"], str) or not rec["fio"].strip():
-        raise ValueError("ФИО должно быть непустой строкой")
-    if not isinstance(rec["group"], str) or not rec["group"].strip():
-        raise ValueError("Группа должна быть непустой строкой")
+    for field in ("fio", "group"):
+        value = rec[field]
+        if not isinstance(value, str):
+            raise TypeError(f"{field}: ожидалась строка, получено {value!r}")
+        if not value.strip():
+            raise ValueError(f"{field}: ожидалась непустая строка, получено {value!r}")
+        try:
+            value.encode("utf-8")
+        except UnicodeEncodeError:
+            raise ValueError(f"Поле {field} содержит недопустимый символ Unicode") from None
     validate_date(rec["birthdate"])
     gpa = rec["gpa"]
     if isinstance(gpa, bool) or not isinstance(gpa, (int, float)):
-        raise ValueError("GPA должно быть числом")
+        raise TypeError(f"GPA: ожидалось число, получено {gpa!r}")
     if not 0 <= gpa <= 5:
-        raise ValueError("GPA должно быть от 0 до 5")
+        raise ValueError(f"GPA: ожидалось число от 0 до 5, получено {gpa!r}")
 ```
 
-Проверяем тип записи и сравниваем множества ключей, поэтому перестановка полей не считается ошибкой. ФИО и группа должны быть строками и оставаться непустыми после `strip()`. Дату проверяем через `validate_date`.
+Проверяем тип записи и сравниваем множества ключей, поэтому перестановка полей не считается ошибкой. ФИО и группа должны быть строками и оставаться непустыми после `strip()`. Оба текстовых поля должны кодироваться в UTF-8. Дату проверяем через `validate_date`.
 
-GPA должен быть числом `int` или `float` в диапазоне 0…5. Отдельно исключаем `bool`, поскольку в Python он является подклассом `int`. Успешная проверка возвращает `None` и не изменяет запись; при ошибке получаем `ValueError`.
+GPA должен быть числом `int` или `float` в диапазоне 0…5. Отдельно исключаем `bool`, поскольку в Python он является подклассом `int`. Успешная проверка возвращает `None` и не изменяет запись; неверный тип вызывает `TypeError`, неверное значение — `ValueError`.
 
 ### СОЗДАНИЕ ЗАПИСИ — MAKE_STUDENT
 
@@ -56,7 +64,7 @@ def make_student(fio: str, birthdate: str, group: str, gpa: int | float) -> dict
     }
 ```
 
-Собираем словарь и передаём его в `validate_student`, чтобы конструктор выполнял те же проверки, что и готовая запись. После проверки убираем лишние пробелы в ФИО, обрезаем пробелы по краям группы и приводим GPA к `float`.
+Собираем словарь и передаём его в `validate_student`, чтобы конструктор выполнял те же проверки, что и готовая запись. После проверки сохраняем все слова ФИО с одним пробелом между ними, обрезаем пробелы по краям группы и приводим GPA к `float`.
 
 В `make_student` передаём числовой GPA, например `4.3` или `5`. Строку `"4.3"` здесь не принимаем: преобразование строк выполняется при импорте в `student_from_dict`.
 
@@ -69,7 +77,7 @@ def student_age(rec: dict, today=None) -> int:
     if today is None:
         today = datetime.date.today()
     if not isinstance(today, datetime.date):
-        raise ValueError("today должна быть датой")
+        raise TypeError(f"today: ожидалась дата, получено {today!r}")
     age = today.year - birthdate.year
     if (today.month, today.day) < (birthdate.month, birthdate.day):
         age -= 1
@@ -101,7 +109,7 @@ def format_student(rec: dict) -> str:
     return f"{name} ({rec['group']}), {age} {suffix}, GPA {rec['gpa']:.2f}"
 ```
 
-Разбиваем ФИО через `split()`, сохраняем фамилию целиком и собираем инициалы остальных частей. Возраст получаем через `student_age`. Для чисел с последними двумя цифрами 11–14 выбираем `лет`; в остальных случаях по последней цифре выбираем `год`, `года` или `лет`. GPA выводим с двумя знаками после точки.
+Разбиваем ФИО через `split()`, оставляем первое слово целиком и собираем инициалы остальных частей. Возраст получаем через `student_age`. Для чисел с последними двумя цифрами 11–14 выбираем `лет`; в остальных случаях по последней цифре выбираем `год`, `года` или `лет`. GPA выводим с двумя знаками после точки.
 
 Получаем строку вида `Иванов И.И. (БИВТ-26-6-1), 19 лет, GPA 4.30`. Возраст в этой строке зависит от текущей даты.
 
@@ -120,78 +128,33 @@ def student_to_dict(rec: dict) -> dict:
 ```python
 def student_from_dict(d: dict) -> dict:
     if not isinstance(d, dict):
-        raise ValueError("Данные студента должны быть словарём")
+        raise TypeError(f"Запись студента: ожидался словарь, получено {type(d).__name__}")
     try:
         rec = {field: d[field] for field in STUDENT_FIELDS}
     except KeyError as error:
         raise ValueError(f"Не указано поле {error.args[0]}") from None
-    if isinstance(rec["gpa"], bool) or not isinstance(rec["gpa"], (int, float, str)):
-        raise ValueError("GPA должно быть числом")
-    try:
-        rec["gpa"] = float(rec["gpa"])
-    except (TypeError, ValueError, OverflowError):
-        raise ValueError("GPA должно быть числом") from None
+    gpa = rec["gpa"]
+    if isinstance(gpa, str):
+        try:
+            rec["gpa"] = float(gpa)
+        except ValueError:
+            raise ValueError(f"GPA: ожидалась числовая запись, получено {gpa!r}") from None
     return make_student(**rec)
 ```
 
 Принимаем словарь из внешнего источника и выбираем только ключи из `STUDENT_FIELDS`. Лишние поля не переносим, а при отсутствии обязательного поля вызываем `ValueError`, называя это поле.
 
-GPA может прийти числом или строкой, поэтому приводим его к `float`. Значение `bool` отклоняем до преобразования. Затем вызываем `make_student`: проверяем диапазон GPA, строки и дату, нормализуем пробелы и возвращаем новую запись. Исходный словарь не изменяем.
-
-### ПРИМЕРЫ РАБОТЫ МОДЕЛИ
-
-Каждый пример ниже выполняем из корня репозитория в консоли Python. Блоки самостоятельные: в каждом указаны нужные импорты.
-
-```python
-import datetime
-from src.lab08.models import (
-    make_student, validate_student, student_age, format_student,
-    student_to_dict, student_from_dict,
-)
-
-student = make_student("  Иванов   Иван Иванович  ", "2007-09-20", " БИВТ-26-6-1 ", 4.3)
-print("Студент:", student)
-print("Валидация:", validate_student(student))
-for today in (datetime.date(2026, 9, 19), datetime.date(2026, 9, 20)):
-    print(f"Возраст на {today}: {student_age(student, today)}")
-print(f"Форматирование на {datetime.date.today()}:")
-print(format_student(student))
-copied = student_to_dict(student)
-print("Копия равна исходной записи:", copied == student)
-print("Копия — тот же объект:", copied is student)
-copied["gpa"] = 5.0
-print("GPA исходной записи после изменения копии:", student["gpa"])
-restored = student_from_dict({**student, "gpa": "4.5", "extra": "лишнее поле"})
-print("GPA после student_from_dict:", restored["gpa"], type(restored["gpa"]).__name__)
-print("Ключи восстановленной записи:", ", ".join(restored))
-```
-
-Вывод запуска:
-
-```text
-Студент: {'fio': 'Иванов Иван Иванович', 'birthdate': '2007-09-20', 'group': 'БИВТ-26-6-1', 'gpa': 4.3}
-Валидация: None
-Возраст на 2026-09-19: 18
-Возраст на 2026-09-20: 19
-Форматирование на 2026-10-31:
-Иванов И.И. (БИВТ-26-6-1), 19 лет, GPA 4.30
-Копия равна исходной записи: True
-Копия — тот же объект: False
-GPA исходной записи после изменения копии: 4.3
-GPA после student_from_dict: 4.5 float
-Ключи восстановленной записи: fio, birthdate, group, gpa
-```
-
-![Вывод запуска функций модели](../../img/lab08/model.png)
+При импорте преобразуем строковый GPA через `float()`. Функция `validate_student` проверяет тип и диапазон `0 <= gpa <= 5`. Границы включены. Точность ограничена типом `float`: например, `"5.0000000000000001"` округляется до `5.0` и проходит проверку.
 
 ## ЗАДАНИЕ Б — СЕРИАЛИЗАЦИЯ В JSON
 
-Функции находятся в [serialize.py](serialize.py). Используем стандартные модули `json`, `csv`, `pathlib` и функции модели:
+Функции находятся в [serialize.py](serialize.py). Для импорта и записи используем следующие модули.
 
 ```python
 import csv
 import json
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 from src.lab08.models import STUDENT_FIELDS, student_from_dict, student_to_dict
 ```
@@ -201,41 +164,46 @@ from src.lab08.models import STUDENT_FIELDS, student_from_dict, student_to_dict
 ```python
 def students_to_json(students: list[dict], path: str | Path) -> None:
     if not isinstance(students, list):
-        raise ValueError("Студенты должны быть списком записей")
+        raise TypeError(f"students: ожидался список, получено {type(students).__name__}")
     data = []
     for number, student in enumerate(students, start=1):
         try:
             data.append(student_to_dict(student))
-        except ValueError as error:
+        except (TypeError, ValueError) as error:
             raise ValueError(f"Запись №{number}: {error}") from error
-    output = json.dumps(data, ensure_ascii=False, indent=2)
-    path = Path(path)
+    path = Path(path).resolve()
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(output, encoding="utf-8")
+    with TemporaryDirectory(dir=path.parent) as directory:
+        temporary = Path(directory) / "students.json"
+        with temporary.open("w", encoding="utf-8") as file:
+            json.dump(data, file, ensure_ascii=False, indent=2)
+        mode = path.stat().st_mode if path.exists() else 0o600
+        temporary.chmod(mode)
+        temporary.replace(path)
 ```
 
 Принимаем список записей и путь типа `str` или `Path`. Каждую запись проверяем через `student_to_dict` и добавляем её копию в новый список. Если запись неверна, сообщаем её номер и причину.
 
-Превращаем список в JSON через `json.dumps`: `ensure_ascii=False` сохраняет русские буквы напрямую, `indent=2` задаёт отступы в два пробела. Создаём недостающие родительские папки и записываем файл в UTF-8. Все записи проверяем до записи файла, поэтому неверные данные не стирают прежний результат. Исходный список не меняем.
+Пишем JSON в UTF-8 с отступом в два пробела во временную подпапку рядом с файлом назначения. После успешной записи и закрытия файла вызываем `replace()`. При ошибке записи прежний файл сохраняется, а временный удаляется.
 
 ### ЧТЕНИЕ — STUDENTS_FROM_JSON
 
 ```python
 def students_from_json(path: str | Path) -> list[dict]:
-    with Path(path).open(encoding="utf-8") as file:
-        data = json.load(file)
+    with Path(path).open(encoding="utf-8-sig") as file:
+        data = json.load(file, object_pairs_hook=_unique_fields)
     if not isinstance(data, list):
         raise ValueError("JSON должен содержать массив записей студентов")
     students = []
     for number, item in enumerate(data, start=1):
         try:
             students.append(student_from_dict(item))
-        except ValueError as error:
+        except (TypeError, ValueError) as error:
             raise ValueError(f"Запись №{number}: {error}") from error
     return students
 ```
 
-Открываем файл в UTF-8 и разбираем JSON через `json.load`. На верхнем уровне ожидаем массив, а каждый его элемент передаём в `student_from_dict`. Возвращаем список проверенных записей с GPA типа `float`. Пустой массив допустим и превращается в пустой список.
+Читаем UTF-8 с BOM или без него. Дробные числа JSON сразу читаются как `float`. Функция `_unique_fields` проверяет пары ключей и значений каждого объекта и при повторе ключа вызывает `ValueError` с его именем. На верхнем уровне ожидаем массив, а каждый его элемент передаём в `student_from_dict`. Возвращаем список проверенных записей с GPA типа `float`. Пустой массив допустим и превращается в пустой список.
 
 ### JSON ДО И ПОСЛЕ ПРЕОБРАЗОВАНИЯ
 
@@ -279,37 +247,6 @@ def students_from_json(path: str | Path) -> list[dict]:
 
 Число записей и значения остальных полей сохраняются. Строковый GPA `"4.3"` становится числом `4.3`, а целое `5` — числом `5.0`. В обоих случаях в Python получаем `float`.
 
-### ПРИМЕР ЧТЕНИЯ И СОХРАНЕНИЯ
-
-```python
-from pathlib import Path
-from src.lab08.models import format_student
-from src.lab08.serialize import students_from_json, students_to_json
-
-students = students_from_json(Path("data/lab08") / "students_input.json")
-students_to_json(students, Path("data/lab08") / "students_output.json")
-restored = students_from_json(Path("data/lab08") / "students_output.json")
-print("Прочитано студентов:", len(students))
-print("Типы GPA:", ", ".join(type(student["gpa"]).__name__ for student in students))
-print("Сохранено: data/lab08/students_output.json")
-print("Записи после повторного чтения совпадают:", restored == students)
-for student in restored:
-    print(format_student(student))
-```
-
-Вывод запуска:
-
-```text
-Прочитано студентов: 2
-Типы GPA: float, float
-Сохранено: data/lab08/students_output.json
-Записи после повторного чтения совпадают: True
-Иванов И.И. (БИВТ-26-6-1), 19 лет, GPA 4.30
-Петрова А.С. (БИВТ-26-6-1), 18 лет, GPA 5.00
-```
-
-![Вывод чтения и сохранения JSON](../../img/lab08/json.png)
-
 ### ПРОВЕРКА НЕВЕРНЫХ ДАННЫХ
 
 В файле [students_bad.json](../../data/lab08/students_bad.json) первая запись содержит несуществующую дату `2003-02-30`, а вторая — GPA `7`:
@@ -345,22 +282,12 @@ except ValueError as error:
 for birthdate, gpa in (("2003-02-30", 4.3), ("2007-09-20", 7), ("2007-09-20", True)):
     try:
         make_student("Иванов Иван Иванович", birthdate, "БИВТ-26-6-1", gpa)
-    except ValueError as error:
-        print(f"birthdate={birthdate}, gpa={gpa}: ValueError: {error}")
+    except (TypeError, ValueError) as error:
+        print(f"birthdate={birthdate}, gpa={gpa}: {type(error).__name__}: {error}")
 ```
 
-Вывод запуска:
+Ошибку в записи из файла импорт сообщает как `ValueError` с номером записи. При прямом вызове функции тип исключения показывает, передан ли неверный тип или недопустимое значение.
 
-```text
-Чтение students_bad.json: ValueError: Запись №1: Дата рождения должна существовать и иметь формат YYYY-MM-DD
-birthdate=2003-02-30, gpa=4.3: ValueError: Дата рождения должна существовать и иметь формат YYYY-MM-DD
-birthdate=2007-09-20, gpa=7: ValueError: GPA должно быть от 0 до 5
-birthdate=2007-09-20, gpa=True: ValueError: GPA должно быть числом
-```
-
-![Вывод проверки неверной даты и GPA](../../img/lab08/errors.png)
-
-## ДОПОЛНИТЕЛЬНОЕ ЗАДАНИЕ СО ЗВЁЗДОЧКОЙ
 
 ### ОБНОВЛЕНИЕ ЗАПИСИ — UPDATE_STUDENT
 
@@ -375,31 +302,34 @@ def update_student(rec: dict, **fields) -> dict:
     return make_student(**updated)
 ```
 
-Проверяем исходную запись и названия изменяемых полей. Неизвестный ключ вызывает `KeyError`. Затем создаём копию, обновляем её поля через `update()` и передаём в `make_student` для проверки и нормализации значений. Неверное значение вызывает `ValueError`; исходная запись остаётся прежней.
+Проверяем исходную запись и названия изменяемых полей. Неизвестный ключ вызывает `KeyError`. Затем создаём копию, обновляем её поля через `update()` и передаём в `make_student` для проверки и нормализации значений. При неверном типе возникает `TypeError`, при недопустимом значении — `ValueError`. Обновление происходит в копии.
 
 ### ИМПОРТ ИЗ CSV — STUDENTS_FROM_CSV
 
 ```python
 def students_from_csv(path: str | Path) -> list[dict]:
-    with Path(path).open(encoding="utf-8", newline="") as file:
-        reader = csv.DictReader(file)
-        header = reader.fieldnames
-        if header is None or len(header) != len(STUDENT_FIELDS) or set(header) != set(STUDENT_FIELDS):
+    with Path(path).open(encoding="utf-8-sig", newline="") as file:
+        reader = csv.DictReader(file, strict=True)
+        try:
+            header = reader.fieldnames or []
+        except csv.Error as error:
+            raise ValueError(f"Заголовок CSV: {error}") from error
+        if len(header) != len(STUDENT_FIELDS) or set(header) != set(STUDENT_FIELDS):
             raise ValueError("CSV должен содержать столбцы fio,birthdate,group,gpa")
         students = []
-        for number, row in enumerate(reader, start=1):
-            try:
-                if None in row or any(value is None for value in row.values()):
+        try:
+            for row in reader:
+                if None in row or None in row.values():
                     raise ValueError("Число значений не совпадает с числом столбцов")
                 students.append(student_from_dict(row))
-            except ValueError as error:
-                raise ValueError(f"Запись №{number}: {error}") from error
+        except (csv.Error, TypeError, ValueError) as error:
+            raise ValueError(f"Запись №{len(students) + 1}: {error}") from error
     return students
 ```
 
-Открываем CSV с `newline=""` и читаем его через `csv.DictReader`. Проверяем, что заголовок содержит ровно поля `fio`, `birthdate`, `group`, `gpa`, без пропущенных, лишних или повторяющихся названий. Порядок столбцов может отличаться. Для каждой записи проверяем число значений и вызываем `student_from_dict`.
+Читаем CSV в UTF-8 с BOM или без него. Параметр `newline=""` позволяет читать переносы строк внутри полей в кавычках. При незакрытой кавычке в конце файла `strict=True` останавливает импорт. Проверяем, что заголовок содержит ровно поля `fio`, `birthdate`, `group`, `gpa`, без пропущенных, лишних или повторяющихся названий. Порядок столбцов может отличаться. Для каждой записи проверяем число значений и вызываем `student_from_dict`.
 
-Все значения из CSV приходят строками. GPA превращается в число внутри `student_from_dict` через `float()`, после чего запись проверяет `make_student`. При ошибке используем `strict`: вызываем `ValueError` с номером записи и причиной.
+Значения CSV приходят строками. Для GPA действует та же проверка диапазона, что и при чтении JSON. Если поле превышает лимит парсера или строка содержит неверные данные, получаем `ValueError` с причиной и номером записи. Нумерация начинается с 1 после заголовка. Ошибки разбора заголовка помечаются отдельно.
 
 Входной файл [students_input.csv](../../data/lab08/students_input.csv) содержит:
 
@@ -430,17 +360,3 @@ print("Прочитано из CSV:", len(students))
 for rec in students:
     print(f"{rec['fio']}: GPA {rec['gpa']}, тип {type(rec['gpa']).__name__}")
 ```
-
-Вывод запуска:
-
-```text
-GPA исходной записи: 4.3
-GPA обновлённой записи: 4.8
-Записи — один объект: False
-Неизвестное поле: KeyError: 'course'
-Прочитано из CSV: 2
-Иванов Иван Иванович: GPA 4.3, тип float
-Петрова Анна Сергеевна: GPA 5.0, тип float
-```
-
-![Вывод обновления записи и чтения CSV](../../img/lab08/extra.png)
