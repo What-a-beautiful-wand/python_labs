@@ -1,29 +1,23 @@
 import csv
 import json
 from pathlib import Path
-from tempfile import TemporaryDirectory
 
-from src.lab08.models import STUDENT_FIELDS, student_from_dict, student_to_dict
+from src.lab08.models import STUDENT_FIELDS, student_from_dict, validate_student
 
 
 def students_to_json(students: list[dict], path: str | Path) -> None:
     if not isinstance(students, list):
         raise TypeError(f"students: ожидался список, получено {type(students).__name__}")
-    data = []
     for number, student in enumerate(students, start=1):
         try:
-            data.append(student_to_dict(student))
+            validate_student(student)
         except (TypeError, ValueError) as error:
             raise ValueError(f"Запись №{number}: {error}") from error
     path = Path(path).resolve()
     path.parent.mkdir(parents=True, exist_ok=True)
-    with TemporaryDirectory(dir=path.parent) as directory:
-        temporary = Path(directory) / "students.json"
-        with temporary.open("w", encoding="utf-8") as file:
-            json.dump(data, file, ensure_ascii=False, indent=2)
-        mode = path.stat().st_mode if path.exists() else 0o600
-        temporary.chmod(mode)
-        temporary.replace(path)
+    data = [student_to_dict(student) for student in students]
+    with open(path, "w", encoding="utf-8") as file:
+        json.dump(data, file, ensure_ascii=False, indent=2)
 
 
 
